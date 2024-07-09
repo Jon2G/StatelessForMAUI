@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 xmlns:vm="clr-namespace:SampleApp.ViewModels"
+			 xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+			 x:Class="SampleApp.Views.DrawingPage"
+			 x:DataType="vm:DrawingViewModel">
+	<Grid ColumnDefinitions="*,*" RowDefinitions="*,Auto,*">
+		<toolkit:DrawingView
+			Grid.ColumnSpan="2"
+			Lines="{Binding Lines, Mode=TwoWay}"
+			IsMultiLineModeEnabled="True" />
+		<Button
+			Grid.Row="1"
+			Command="{Binding ClearCommand}"
+			Text="Clear" />
+		<Button
+			Grid.Row="1"
+			Grid.Column="1"
+			Clicked="SaveClicked"
+			Text="Save" />
+		<Image
+			x:Name="GeneratedImage"
+			Grid.Row="2"
+			Grid.ColumnSpan="2" />
+	</Grid>
+
+</ContentPage>
