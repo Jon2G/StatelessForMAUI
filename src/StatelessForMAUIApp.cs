@@ -13,14 +13,21 @@ namespace StatelessForMAUI
 {
     public class StatelessForMAUIApp : Application
     {
+        private static INavigation navigation;
         public static INavigation Navigation
         {
-            get => Application.Current.MainPage.Navigation;
+            get => navigation ??= Application.Current!.MainPage!.Navigation;
+            internal set
+            {
+                navigation = value;
+            }
         }
+
+
         private Type? SplashPageType;
         private Type? OnDisconectedFromInternetType;
         private Type? OnNetworkErrorType;
-        internal static  ConectivityStateMachine ConectivityStateMachine { get; private set; }
+        internal static ConectivityStateMachine ConectivityStateMachine { get; private set; }
         internal static NavigationStateMachine NavigationStateMachine { get; private set; }
         internal static AppLifeStateMachine AppLifeStateMachine { get; private set; }
 
@@ -53,7 +60,7 @@ namespace StatelessForMAUI
 
         private void SplashPage_Appearing(object? sender, EventArgs e)
         {
-            if(sender is Page sp)
+            if (sender is Page sp)
             {
                 sp.Appearing += SplashPage_Appearing;
             }

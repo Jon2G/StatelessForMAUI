@@ -300,7 +300,16 @@ namespace StatelessForMAUI.StateMachine
                     {
                         if (Application.Current!.MainPage!.GetType()== page.GetType())
                         {
-                            await Navigation.PopToRootAsync();
+                            if (Application.Current!.MainPage is FlyoutPage flyout && flyout.Detail.Navigation is INavigation flyNavigation)
+                            {
+                              await  flyNavigation.PopToRootAsync();
+                                StatelessForMAUIApp.Navigation = flyNavigation;
+                            }
+                            else
+                            {
+                                StatelessForMAUIApp.Navigation = Navigation;
+                                await Navigation.PopToRootAsync();
+                            }
                         }
                         Application.Current!.MainPage = page;
                         return;
