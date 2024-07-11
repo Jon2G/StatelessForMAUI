@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AsyncAwaitBestPractices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls;
 using Stateless;
 using StatelessForMAUI.Attributes;
 using StatelessForMAUI.Pages;
@@ -70,7 +71,7 @@ namespace StatelessForMAUI.StateMachine
             else
             {
                 stateMachine
-                        .Configure(this.Name).Ignore(NavigationStateMachine.GO_BACK); 
+                        .Configure(this.Name).Ignore(NavigationStateMachine.GO_BACK);
             }
             if (StatelessNavigationAttribute.allowedTransitions is not null)
             {
@@ -200,19 +201,25 @@ namespace StatelessForMAUI.StateMachine
 
         internal static string DynamicGoBack()
         {
-            var stack = Navigation.NavigationStack ?? Navigation.ModalStack;
-            if (stack.Count > 1)
-            {
-                var backTo = stack[stack.Count - 2];
-                if (backTo is Page page)
-                {
-                    return page.GetPageStateName();
-                }
-            }
-            return NavigationStateMachine.CurrentPage!.GetPageStateName();
+            string pageName = string.Empty;
+            MainThread.BeginInvokeOnMainThread(() =>
+             {
+                 var stack = Navigation.ModalStack;
+                 if (stack.Count > 1)
+                 {
+                     var backTo = stack[stack.Count - 2];
+                     if (backTo is Page page)
+                     {
+                         pageName = page.GetPageStateName();
+                     }
+                 }
+                 pageName = NavigationStateMachine.CurrentPage!.GetPageStateName();
+             });
+            Debug.WriteLine($"GoBack to ${pageName}");
+            return pageName;
         }
 
-        public static NavigationStateMachine GoTo<T>() where T:Page
+        public static NavigationStateMachine GoTo<T>() where T : Page
         {
             return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)));
         }
@@ -252,9 +259,9 @@ namespace StatelessForMAUI.StateMachine
             this.StateMachine.OnTransitioned(t =>
             {
                 Page? page = null;
-                MainThread.BeginInvokeOnMainThread(
+                MainThread.InvokeOnMainThreadAsync(
                     () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
-                );
+                ).SafeFireAndForget();
                 Dictionary<string, object?>? data = null;
                 if (
                     t.Parameters != null
@@ -276,9 +283,9 @@ namespace StatelessForMAUI.StateMachine
                 if (t.Trigger == GO_BACK)
                 {
                     INavigation navigation = Navigation;
-                    if (navigation.NavigationStack.Count > 0)
+                    if (navigation.ModalStack.Count > 0)
                     {
-                        navigation.PopAsync().SafeFireAndForget();
+                        navigation.PopModalAsync().SafeFireAndForget();
                         return;
                     }
                 }
@@ -298,27 +305,35 @@ namespace StatelessForMAUI.StateMachine
                     var attributte = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
                     if (attributte?.isRoot ?? false)
                     {
-                        if (Application.Current!.MainPage!.GetType()== page.GetType())
-                        {
-                            if (Application.Current!.MainPage is FlyoutPage flyout && flyout.Detail.Navigation is INavigation flyNavigation)
-                            {
-                              await  flyNavigation.PopToRootAsync();
-                                StatelessForMAUIApp.Navigation = flyNavigation;
-                            }
-                            else
-                            {
-                                StatelessForMAUIApp.Navigation = Navigation;
-                                await Navigation.PopToRootAsync();
-                            }
-                        }
-                        Application.Current!.MainPage = page;
+                        await PushRootPage(page);
                         return;
                     }
-
-                   
                     await Navigation.PushModalAsync(page);
                 }).SafeFireAndForget();
             });
+        }
+
+        private async Task PushRootPage(Page page)
+        {
+            await Task.Yield();
+            bool popToRoot = false;
+            if (Application.Current!.MainPage!.GetType() == page.GetType())
+            {
+                popToRoot = true;
+            }
+            else
+            {
+                Application.Current!.MainPage = page;
+            }
+
+            if (Application.Current!.MainPage is FlyoutPage flyout && flyout.Detail.Navigation is INavigation flyNavigation)
+            {
+                StatelessForMAUIApp.Navigation = flyNavigation;
+            }
+            if (popToRoot)
+            {
+                await StatelessForMAUIApp.Navigation.PopToRootAsync();
+            }
         }
     }
 }
