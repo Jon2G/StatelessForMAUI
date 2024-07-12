@@ -308,6 +308,7 @@ namespace StatelessForMAUI.StateMachine
                 }
                 if (page is null)
                 {
+                    Debug.WriteLine("page is null!","Error");
                     return;
                 }
 

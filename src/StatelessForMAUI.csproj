@@ -19,12 +19,12 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
-		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.61" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.61" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.70" />
+		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="AsyncAwaitBestPractices" Version="7.0.0" />
+	  <PackageReference Include="AsyncAwaitBestPractices" Version="8.0.0" />
 	  <PackageReference Include="Stateless" Version="5.16.0" />
 	</ItemGroup>
 

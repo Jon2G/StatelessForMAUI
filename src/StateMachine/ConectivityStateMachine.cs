@@ -82,7 +82,7 @@ namespace StatelessForMAUI.StateMachine
 
             Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
             this.StateMachine.Fire(GetConectivityTrigger());
-
+            Init();
 
         }
 
@@ -103,10 +103,9 @@ namespace StatelessForMAUI.StateMachine
             return this.NetworkAccessConectivity[(NetworkAccess)accessType];
         }
 
-        internal static void Init()
+        private void Init()
         {
-
-            Instance.StateMachine.OnTransitionCompleted(t =>
+            this.StateMachine.OnTransitionCompleted(t =>
             {
                 if (NavigationStateMachine.CurrentPage is IConectivityStatePage statePage)
                 {
