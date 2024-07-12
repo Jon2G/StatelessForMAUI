@@ -207,13 +207,26 @@ namespace StatelessForMAUI.StateMachine
                  var stack = Navigation.ModalStack;
                  if (stack.Count > 1)
                  {
+                     var current = stack.Last();
+                     var currentPageName = current.GetPageStateName();
                      var backTo = stack[stack.Count - 2];
                      if (backTo is Page page)
                      {
                          pageName = page.GetPageStateName();
+                         if (backTo is INavigationEventsPage eventsPage)
+                         {
+                             eventsPage.OnNavigatedTo(currentPageName);
+                         }
+                         if (current is INavigationEventsPage eventsPagec)
+                         {
+                             eventsPagec.OnNavigatedAway(pageName);
+                         }
                      }
                  }
-                 pageName = NavigationStateMachine.CurrentPage!.GetPageStateName();
+                 else
+                 {
+                     pageName = NavigationStateMachine.CurrentPage!.GetPageStateName();
+                 }
              });
             Debug.WriteLine($"GoBack to ${pageName}");
             return pageName;
@@ -301,6 +314,12 @@ namespace StatelessForMAUI.StateMachine
                 MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     Debug.WriteLine("Dispatched");
+
+                    if (CurrentPage is INavigationEventsPage currentEventsPage)
+                    {
+                        currentEventsPage.OnNavigatedAway(t.Destination);
+                    }
+
                     CurrentPage = page;
                     var attributte = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
                     if (attributte?.isRoot ?? false)
@@ -309,6 +328,10 @@ namespace StatelessForMAUI.StateMachine
                         return;
                     }
                     await Navigation.PushModalAsync(page);
+                    if (page is INavigationEventsPage navigation)
+                    {
+                        navigation.OnNavigatedTo(t.Source);
+                    }
                 }).SafeFireAndForget();
             });
         }
