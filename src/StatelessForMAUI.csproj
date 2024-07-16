@@ -25,7 +25,11 @@
 
 	<ItemGroup>
 	  <PackageReference Include="AsyncAwaitBestPractices" Version="8.0.0" />
-	  <PackageReference Include="Stateless" Version="5.16.0" />
+	  <!--<PackageReference Include="Stateless" Version="5.16.0" />-->
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\stateless\src\Stateless\Stateless.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
