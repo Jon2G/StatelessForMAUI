@@ -1,5 +1,6 @@
 ﻿using StatelessForMAUI.StateMachine;
 using StatelessForMAUI.StateMachine.Triggers;
+using TinyTypeContainer;
 
 namespace StatelessForMAUI
 {
@@ -15,9 +16,12 @@ namespace StatelessForMAUI
             }
         }
 
-        internal static ConnectivityStateMachine? ConnectivityStateMachine { get; private set; }
-        internal static NavigationStateMachine? NavigationStateMachine { get; private set; }
-        internal static AppLifeStateMachine? AppLifeStateMachine { get; private set; }
+        //internal static ConnectivityStateMachine? ConnectivityStateMachine { get; private set; }
+        //internal static NavigationStateMachine? NavigationStateMachine { get; private set; }
+        public static AppLifeStateMachine Instance
+        {
+            get => Container.GetRequired<AppLifeStateMachine>();
+        }
         internal static bool Debug { get; private set; }
         public Page Initialize(Type? splashPageType = null,
             Type? onDisconnectedFromInternet = null,
@@ -29,14 +33,14 @@ namespace StatelessForMAUI
             var splashPage = ActivatePage(splashPageType);
             splashPage.Appearing += SplashPage_Appearing;
 
-            ConnectivityStateMachine = new ConnectivityStateMachine(
+            Container.Register(new ConnectivityStateMachine(
    onDisconnectedFromInternet: onDisconnectedFromInternet,
    onNetworkError: onNetworkError
-   );
-            NavigationStateMachine = new NavigationStateMachine(splashPageType, HapticFeedBackOnPageChange);
+   ));
+            Container.Register(new NavigationStateMachine(splashPageType, HapticFeedBackOnPageChange));
             NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
             NavigationStateMachine.CurrentPage = splashPage;
-            AppLifeStateMachine = new AppLifeStateMachine();
+            Container.Register(new AppLifeStateMachine());
             NavigationPage.SetHasNavigationBar(splashPage, false);
             return MainPage = new NavigationPage(splashPage);
         }

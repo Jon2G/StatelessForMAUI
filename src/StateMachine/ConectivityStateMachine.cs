@@ -1,24 +1,20 @@
-﻿using StatelessForMAUI.StateMachine.States;
-using StatelessForMAUI.StateMachine.Triggers;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Stateless;
+﻿using Stateless;
 using StatelessForMAUI.Pages;
+using StatelessForMAUI.StateMachine.States;
+using StatelessForMAUI.StateMachine.Triggers;
+using System.Collections.ObjectModel;
+using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
 {
-    public class ConnectivityStateMachine: StateMachineBase<ConectivityState, ConectivityTrigger>
+    public class ConnectivityStateMachine : StateMachineBase<ConectivityState, ConectivityTrigger>
     {
         public const string ON_DISCONECTED_FROM_INTERNET = "OnDisconnectedFromInternet";
         public const string ON_CONNECTED_TO_INTERNET = "OnConnectedToInternet";
         public const string ON_NETWORK_ERROR = "OnNetworkError";
         public static ConnectivityStateMachine Instance
         {
-            get =>Application.Current!.Handler.MauiContext!.Services!.GetRequiredService<ConnectivityStateMachine>();
+            get => Container.GetRequired<ConnectivityStateMachine>();
         }
         internal readonly Type? OnDisconnectedFromInternetPage;
         internal readonly Type? OnNetworkErrorPage;
@@ -118,7 +114,7 @@ namespace StatelessForMAUI.StateMachine
                             statePage.OnConnectivityOff();
                             break;
                         case ConectivityState.Error:
-                           statePage.OnConnectivityError();
+                            statePage.OnConnectivityError();
                             break;
                     }
                 }

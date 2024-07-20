@@ -16,6 +16,17 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+		<Title>Stateless For MAUI</Title>
+		<Authors>Jon2G</Authors>
+		<Description>A state machine for maui apps that helps to control app life cycle, navigation and connectivity</Description>
+		<PackageProjectUrl>https://github.com/Jon2G/StatelessForMAUI</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/Jon2G/StatelessForMAUI</RepositoryUrl>
+		<PackageTags>stateless,statemachine,maui,lifecycle</PackageTags>
+		<NeutralLanguage>en</NeutralLanguage>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
@@ -24,7 +35,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="..\LICENSE">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <PackageReference Include="AsyncAwaitBestPractices" Version="8.0.0" />
+	  <PackageReference Include="TinyTypeContainer" Version="1.0.0" />
 	  <!--<PackageReference Include="Stateless" Version="5.16.0" />-->
 	</ItemGroup>
 

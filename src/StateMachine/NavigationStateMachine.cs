@@ -5,6 +5,7 @@ using StatelessForMAUI.Pages;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
+using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
 {
@@ -136,8 +137,7 @@ namespace StatelessForMAUI.StateMachine
         private static INavigation Navigation => StatelessForMauiApp.Navigation;
         public static NavigationStateMachine Instance
         {
-            get =>
-                Application.Current!.Handler.MauiContext!.Services.GetRequiredService<NavigationStateMachine>();
+            get => Container.GetRequired<NavigationStateMachine>();
         }
         public override StateMachine<string, string> StateMachine { get; protected set; }
 
@@ -161,7 +161,7 @@ namespace StatelessForMAUI.StateMachine
                     Fire(GO_BACK);
                 }
             });
-            this.BuildStateMachine(StatelessForMauiApp.ConnectivityStateMachine);
+            this.BuildStateMachine(Container.GetRequired<ConnectivityStateMachine>());
         }
 
         private void BuildStateMachine(ConnectivityStateMachine? connectivityStateMachine = null)

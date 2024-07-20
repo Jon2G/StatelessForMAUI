@@ -1,18 +1,14 @@
 ﻿using Stateless;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using StatelessForMAUI.Pages;
 using StatelessForMAUI.StateMachine.States;
 using StatelessForMAUI.StateMachine.Triggers;
-using StatelessForMAUI.Pages;
+using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
 {
     public class AppLifeStateMachine : StateMachineBase<AppLifeState, AppLifeTrigger>
     {
-        public static AppLifeStateMachine Instance => StatelessForMauiApp.AppLifeStateMachine ?? throw new NullReferenceException("AppLifeStateMachine has not been activated yet.");
+        public static AppLifeStateMachine Instance => Container.GetRequired<AppLifeStateMachine>();
         public override StateMachine<AppLifeState, AppLifeTrigger> StateMachine { get; protected set; }
 
 
