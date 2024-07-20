@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Android.App;
+﻿using Android.App;
 using Android.OS;
-using Android.Widget;
 using AndroidX.Activity;
 using StatelessForMAUI.StateMachine;
 
@@ -21,10 +15,10 @@ namespace StatelessForMAUI.Platforms.Android
             OnBackPressed(this.activity);
         }
 
-        public static void OnBackPressed(Activity activity)
+        public static async void OnBackPressed(Activity activity)
         {
-            var previousState =StateMachine.NavigationStateMachine.Instance.StateMachine.State;
-            NavigationStateMachine.Fire(NavigationStateMachine.GO_BACK);
+            var previousState = StateMachine.NavigationStateMachine.Instance.StateMachine.State;
+            await NavigationStateMachine.FireAsync(NavigationStateMachine.GO_BACK);
             var currentState = NavigationStateMachine.Instance.StateMachine.State;
             if (previousState == currentState)
             {

@@ -1,13 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Stateless.Graph;
-using StatelessForMAUI.StateMachine;
+﻿using StatelessForMAUI.StateMachine;
 using StatelessForMAUI.StateMachine.Triggers;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StatelessForMAUI
 {
@@ -29,7 +21,9 @@ namespace StatelessForMAUI
         internal static bool Debug { get; private set; }
         public Page Initialize(Type? splashPageType = null,
             Type? onDisconnectedFromInternet = null,
-            Type? onNetworkError = null, bool debug = false)
+            Type? onNetworkError = null,
+            bool HapticFeedBackOnPageChange = false,
+            bool debug = false)
         {
             Debug = debug;
             var splashPage = ActivatePage(splashPageType);
@@ -39,16 +33,12 @@ namespace StatelessForMAUI
    onDisconnectedFromInternet: onDisconnectedFromInternet,
    onNetworkError: onNetworkError
    );
-            NavigationStateMachine = new NavigationStateMachine(splashPageType);
+            NavigationStateMachine = new NavigationStateMachine(splashPageType, HapticFeedBackOnPageChange);
             NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
             NavigationStateMachine.CurrentPage = splashPage;
             AppLifeStateMachine = new AppLifeStateMachine();
-            return new FlyoutPage()
-            {
-                Detail = splashPage,
-                ////
-                Flyout = new ContentPage() { Title = "flyout" },
-            }; 
+            NavigationPage.SetHasNavigationBar(splashPage, false);
+            return MainPage = new NavigationPage(splashPage);
         }
 
         private void SplashPage_Appearing(object? sender, EventArgs e)
@@ -93,6 +83,6 @@ namespace StatelessForMAUI
             base.OnSleep();
             AppLifeStateMachine.Instance.StateMachine.Fire(AppLifeTrigger.OnBackground);
         }
-   
+
     }
 }

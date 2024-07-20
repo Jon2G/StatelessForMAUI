@@ -5,4 +5,11 @@
 			 x:Class="SampleApp.Views.MainPage"
 			 x:DataType="vm:MainViewModel">
 
+    <Grid RowDefinitions="*,*" ColumnDefinitions="*,*" RowSpacing="20" ColumnSpacing="20" Padding="20">
+        <Button VerticalOptions="Center" Text="Go to Drawing page" Clicked="Button_Clicked" Grid.Row="0" Grid.Column="0"/>
+        <Button VerticalOptions="Center" Text="Go to Map page" Clicked="Button_Clicked_1" Grid.Row="0" Grid.Column="1"/>
+        <Button VerticalOptions="Center" Text="Go to Media Element Page" Clicked="Button_Clicked_2" Grid.Row="1" Grid.Column="0"/>
+        <Button VerticalOptions="Center" Text="Go to WebView Page" Clicked="Button_Clicked_3" Grid.Row="1" Grid.Column="1"/>
+    </Grid>
+    
 </ContentPage>

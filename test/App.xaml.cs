@@ -1,11 +1,17 @@
-﻿namespace SampleApp;
+﻿using SampleApp.Pages;
 
-public partial class App : Application
+namespace SampleApp;
+
+public partial class App : StatelessForMAUI.StatelessForMauiApp
 {
-	public App()
-	{
-		InitializeComponent();
+    public App()
+    {
+        InitializeComponent();
+        var debug = false;
+#if DEBUG
+        debug = true;
+#endif
 
-		MainPage = new MainPage(new MainViewModel());
-	}
+        Initialize(typeof(SplashPage), debug: debug);
+    }
 }

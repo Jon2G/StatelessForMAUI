@@ -56,10 +56,10 @@
 		<PackageReference Include="CommunityToolkit.Maui" Version="9.0.2" />
 		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="4.0.1" />
 		<PackageReference Include="CommunityToolkit.MVVM" Version="8.2.2" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.61" />
-		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.61" />
-		<PackageReference Include="Microsoft.Maui.Controls.Maps" Version="8.0.61" />
-		<PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.61" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.70" />
+		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
+		<PackageReference Include="Microsoft.Maui.Controls.Maps" Version="8.0.70" />
+		<PackageReference Include="Microsoft.Maui.Essentials" Version="8.0.70" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
 	</ItemGroup>
 
@@ -69,6 +69,18 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\src\StatelessForMAUI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Pages\SplashPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Pages\SplashPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </None>
 	</ItemGroup>
 
 	<PropertyGroup Label="MauiAppAccelerator">

@@ -1,19 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Security.Permissions;
-using System.Text;
-using System.Threading.Tasks;
-using AsyncAwaitBestPractices;
-using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Controls;
+﻿using AsyncAwaitBestPractices;
 using Stateless;
 using StatelessForMAUI.Attributes;
 using StatelessForMAUI.Pages;
-using static System.TimeZoneInfo;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace StatelessForMAUI.StateMachine
 {
@@ -152,9 +143,10 @@ namespace StatelessForMAUI.StateMachine
 
         public static Page? CurrentPage { get; internal set; } = null;
         private ReadOnlyDictionary<string, Func<Page>>? Pages;
-
-        public NavigationStateMachine(Type? splashPageType)
+        private readonly bool HapticFeedBack;
+        public NavigationStateMachine(Type? splashPageType, bool hapticFeedBack)
         {
+            this.HapticFeedBack = hapticFeedBack;
             this.StateMachine = new StateMachine<string, string>(
                 PageStateNameGenerator.GetPageStateName(splashPageType)
             );
@@ -319,11 +311,14 @@ namespace StatelessForMAUI.StateMachine
             this.StateMachine.OnTransitionedAsync(async t =>
             {
                 Page? page = null;
-                MainThread
-                    .InvokeOnMainThreadAsync(
-                        () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
-                    )
-                    .SafeFireAndForget();
+                if (this.HapticFeedBack)
+                {
+                    MainThread
+                        .InvokeOnMainThreadAsync(
+                            () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
+                        )
+                        .SafeFireAndForget();
+                }
                 bool isShell = Shell.Current is not null;
                 if (StatelessForMauiApp.Debug)
                 {
@@ -395,7 +390,16 @@ namespace StatelessForMAUI.StateMachine
             }
             else
             {
-                Application.Current!.MainPage = page;
+                if (page is NavigationPage navPage)
+                {
+                    Application.Current!.MainPage = navPage;
+                }
+                else
+                {
+                    Application.Current!.MainPage = new NavigationPage(page);
+                }
+                StatelessForMauiApp.Navigation = Application.Current!.MainPage.Navigation;
+
             }
 
             if (

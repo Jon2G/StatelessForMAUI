@@ -1,10 +1,12 @@
-﻿namespace SampleApp.Views;
+﻿using StatelessForMAUI.Attributes;
 
+namespace SampleApp.Views;
+[StatelessNavigation(GoBackTarget: typeof(MainPage))]
 public partial class WebViewPage : ContentPage
 {
-	public WebViewPage(WebViewViewModel viewModel)
-	{
-		InitializeComponent();
-		BindingContext = viewModel;
-	}
+    public WebViewPage()
+    {
+        InitializeComponent();
+        BindingContext = new WebViewViewModel();
+    }
 }
