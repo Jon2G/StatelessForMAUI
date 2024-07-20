@@ -17,34 +17,29 @@ using static System.TimeZoneInfo;
 
 namespace StatelessForMAUI.StateMachine
 {
-    internal class NavigationStateItem
-    {
-        public readonly string Name;
-        public readonly string Trigger;
-        public readonly StatelessNavigationAttribute StatelessNavigationAttribute;
-        public readonly Type Type;
-
-        public NavigationStateItem(
-            string name,
-            string triggerName,
-            StatelessNavigationAttribute statelessNavigationAttribute,
-            Type type
+    internal class NavigationStateItem(
+        string name,
+        string triggerName,
+        StatelessNavigationAttribute statelessNavigationAttribute,
+        Type type
         )
-        {
-            this.Name = name;
-            this.Trigger = triggerName;
-            this.StatelessNavigationAttribute = statelessNavigationAttribute;
-            this.Type = type;
-        }
+    {
+        public readonly string Name = name;
+        public readonly string Trigger = triggerName;
+        public readonly StatelessNavigationAttribute StatelessNavigationAttribute = statelessNavigationAttribute;
+        public readonly Type Type = type;
 
-        internal Page GetPage() => StatelessForMAUIApp.ActivatePage(this.Type);
+        internal Page GetPage() => StatelessForMauiApp.ActivatePage(this.Type);
 
         internal void BuildState(
             StateMachine<string, string> stateMachine,
-            ConectivityStateMachine? conectivityStateMachine = null
+            ConnectivityStateMachine? connectivityStateMachine = null
         )
         {
-            Debug.WriteLine(Name);
+            if (StatelessForMauiApp.Debug)
+            {
+                Debug.WriteLine("BuildState " + Name);
+            }
             if (StatelessNavigationAttribute.canGoBack)
             {
                 if (StatelessNavigationAttribute.goBackTarget is not null)
@@ -77,8 +72,8 @@ namespace StatelessForMAUI.StateMachine
                 foreach (var transition in StatelessNavigationAttribute.allowedTransitions)
                 {
                     var transitionName = PageStateNameGenerator.GetPageStateName(transition);
-                    var triggerName = PageStateNameGenerator.GetPageTrigger(transition);
-                    stateMachine.Configure(this.Name).Permit(triggerName, transitionName);
+                    var _triggerName = PageStateNameGenerator.GetPageTrigger(transition);
+                    stateMachine.Configure(this.Name).Permit(_triggerName, transitionName);
                 }
             }
 
@@ -87,34 +82,34 @@ namespace StatelessForMAUI.StateMachine
                 foreach (var transition in StatelessNavigationAttribute.ignoredTransitions)
                 {
                     var transitionName = PageStateNameGenerator.GetPageStateName(transition);
-                    var triggerName = PageStateNameGenerator.GetPageTrigger(transition);
-                    stateMachine.Configure(this.Name).Permit(triggerName, transitionName);
+                    var _triggerName = PageStateNameGenerator.GetPageTrigger(transition);
+                    stateMachine.Configure(this.Name).Permit(_triggerName, transitionName);
                 }
             }
             if (
                 StatelessNavigationAttribute.useNetworkTriggers
-                && conectivityStateMachine is not null
+                && connectivityStateMachine is not null
             )
             {
-                if (conectivityStateMachine.OnDisconectedFromInternetPage is not null)
+                if (connectivityStateMachine.OnDisconnectedFromInternetPage is not null)
                 {
                     stateMachine
                         .Configure(this.Name)
                         .Permit(
-                            ConectivityStateMachine.ON_DISCONECTED_FROM_INTERNET,
+                            ConnectivityStateMachine.ON_DISCONECTED_FROM_INTERNET,
                             PageStateNameGenerator.GetPageStateName(
-                                conectivityStateMachine.OnDisconectedFromInternetPage
+                                connectivityStateMachine.OnDisconnectedFromInternetPage
                             )
                         );
                 }
-                if (conectivityStateMachine.OnNetworkErrorPage is not null)
+                if (connectivityStateMachine.OnNetworkErrorPage is not null)
                 {
                     stateMachine
                         .Configure(this.Name)
                         .Permit(
-                            ConectivityStateMachine.ON_NETWORK_ERROR,
+                            ConnectivityStateMachine.ON_NETWORK_ERROR,
                             PageStateNameGenerator.GetPageStateName(
-                                conectivityStateMachine.OnNetworkErrorPage
+                                connectivityStateMachine.OnNetworkErrorPage
                             )
                         );
                 }
@@ -125,7 +120,7 @@ namespace StatelessForMAUI.StateMachine
                 stateMachine
                     .Configure(this.Name)
                     .Permit(
-                        ConectivityStateMachine.ON_CONNECTED_TO_INTERNET,
+                        ConnectivityStateMachine.ON_CONNECTED_TO_INTERNET,
                         PageStateNameGenerator.GetPageStateName(
                             StatelessNavigationAttribute.onConnectedToInternet
                         )
@@ -144,29 +139,40 @@ namespace StatelessForMAUI.StateMachine
         }
     }
 
-    public class NavigationStateMachine
+    public class NavigationStateMachine : StateMachineBase<string, string>
     {
         public const string GO_BACK = "GoBack";
-        private static INavigation Navigation => StatelessForMAUIApp.Navigation;
+        private static INavigation Navigation => StatelessForMauiApp.Navigation;
         public static NavigationStateMachine Instance
         {
             get =>
                 Application.Current!.Handler.MauiContext!.Services.GetRequiredService<NavigationStateMachine>();
         }
-        public readonly StateMachine<string, string> StateMachine;
+        public override StateMachine<string, string> StateMachine { get; protected set; }
 
-        public static Page? CurrentPage { get; private set; } = null;
-        private ReadOnlyDictionary<string, Func<Page>> Pages;
+        public static Page? CurrentPage { get; internal set; } = null;
+        private ReadOnlyDictionary<string, Func<Page>>? Pages;
 
         public NavigationStateMachine(Type? splashPageType)
         {
             this.StateMachine = new StateMachine<string, string>(
                 PageStateNameGenerator.GetPageStateName(splashPageType)
             );
-            this.BuildStateMachine(StatelessForMAUIApp.ConectivityStateMachine);
+            this.StateMachine.OnUnhandledTrigger((state, trigger) =>
+            {
+                if (StatelessForMauiApp.Debug)
+                {
+                    Debug.WriteLine($"Unhandled trigger {trigger} in state {state}");
+                }
+                if (this.StateMachine.CanFire(GO_BACK))
+                {
+                    Fire(GO_BACK);
+                }
+            });
+            this.BuildStateMachine(StatelessForMauiApp.ConnectivityStateMachine);
         }
 
-        private void BuildStateMachine(ConectivityStateMachine? conectivityStateMachine = null)
+        private void BuildStateMachine(ConnectivityStateMachine? connectivityStateMachine = null)
         {
             var pagesDictionary = new Dictionary<string, Func<Page>>();
             foreach (
@@ -175,7 +181,7 @@ namespace StatelessForMAUI.StateMachine
                     .Where(a => !a.IsDynamic)
                     .SelectMany(a =>
                         a.GetTypes()
-                            .Where(x => x.IsAbstract == false && x.IsSubclassOf(typeof(Page)))
+                            .Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Page)))
                     )
             )
             {
@@ -191,7 +197,7 @@ namespace StatelessForMAUI.StateMachine
                         type
                     );
                     pagesDictionary.Add(name, () => navigationItem.GetPage());
-                    navigationItem.BuildState(this.StateMachine, conectivityStateMachine);
+                    navigationItem.BuildState(this.StateMachine, connectivityStateMachine);
                 }
             }
             Pages = new ReadOnlyDictionary<string, Func<Page>>(pagesDictionary);
@@ -201,26 +207,26 @@ namespace StatelessForMAUI.StateMachine
         internal static async Task<string> DynamicGoBack()
         {
             string backPageName = string.Empty;
-           await MainThread.InvokeOnMainThreadAsync(async () =>
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+             {
+                 INavigation navigation = Navigation;
+                 if (navigation.ModalStack.Count > 0)
+                 {
+                     Page? away = await navigation.PopModalAsync();
+                     var navigationCollection = navigation.ModalStack ?? navigation.NavigationStack;
+                     CurrentPage = navigationCollection.Count > 0 ? navigationCollection[navigationCollection.Count - 1] : Application.Current?.MainPage;
+                     OnNavigatedAway(away, CurrentPage);
+                     OnNavigatedTo(CurrentPage, away);
+                     backPageName = CurrentPage!.GetPageStateName();
+                 }
+                 else
+                 {
+                     backPageName = NavigationStateMachine.CurrentPage!.GetPageStateName();
+                 }
+             }); if (StatelessForMauiApp.Debug)
             {
-                INavigation navigation = Navigation;
-                if (navigation.ModalStack.Count > 0)
-                {
-                    Page? away = await navigation.PopModalAsync();
-                    CurrentPage =
-                        navigation.ModalStack.LastOrDefault()
-                        ?? navigation.NavigationStack.LastOrDefault()
-                        ?? Application.Current.MainPage;
-                    Instance.OnNavigatedAway(away, CurrentPage);
-                    Instance.OnNavigatedTo(CurrentPage, away);
-                    backPageName =CurrentPage!.GetPageStateName();
-                }
-                else
-                {
-                    backPageName = NavigationStateMachine.CurrentPage!.GetPageStateName();
-                }
-            });
-                 Debug.WriteLine($"GoBack to ${backPageName}");
+                Debug.WriteLine($"GoBack to ${backPageName}");
+            }
             return backPageName;
         }
 
@@ -232,8 +238,11 @@ namespace StatelessForMAUI.StateMachine
 
         public static NavigationStateMachine Fire(string trigger)
         {
+            Debug.WriteLineIf(StatelessForMauiApp.Debug,
+                "Fire: " + trigger
+            );
             var instance = NavigationStateMachine.Instance;
-            instance.StateMachine.Fire(trigger);
+            instance.StateMachine.FireAsync(trigger).SafeFireAndForget();
             return instance;
         }
 
@@ -247,7 +256,7 @@ namespace StatelessForMAUI.StateMachine
         {
             if (Instance.StateMachine.CanFire(trigger))
             {
-                Instance.StateMachine.Fire(trigger);
+                Fire(trigger);
                 return true;
             }
             return false;
@@ -256,11 +265,11 @@ namespace StatelessForMAUI.StateMachine
         public static void GoBack()
         {
             Application
-                .Current?.Dispatcher.DispatchAsync(() => Instance.StateMachine.Fire(GO_BACK))
-                .SafeFireAndForget();
+            .Current?.Dispatcher.DispatchAsync(() => Fire(GO_BACK))
+            .SafeFireAndForget();
         }
 
-        private void OnNavigatedAway(Page? away, string? to)
+        internal static void OnNavigatedAway(Page? away, string? to)
         {
             if (away is INavigationEventsPage awayPage)
             {
@@ -268,25 +277,25 @@ namespace StatelessForMAUI.StateMachine
             }
         }
 
-        private void OnNavigatedAway(Page? away, Page? to)
+        internal static void OnNavigatedAway(Page? away, Page? to)
         {
             OnNavigatedAway(away, to?.GetPageStateName());
         }
 
-        private void OnNavigatedTo(Page? to, string from)
+        internal static void OnNavigatedTo(Page? to, string? from)
         {
             if (to is INavigationEventsPage toPage)
             {
-                toPage.OnNavigatedTo(from);
+                toPage.OnNavigatedTo(from ?? string.Empty);
             }
         }
 
-        private void OnNavigatedTo(Page? to, Page from)
+        internal static void OnNavigatedTo(Page? to, Page from)
         {
             OnNavigatedTo(to, from.GetPageStateName());
         }
 
-        private Page BuildPage(Func<Page> func)
+        private static Page BuildPage(Func<Page> func)
         {
             try
             {
@@ -294,17 +303,20 @@ namespace StatelessForMAUI.StateMachine
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(
-                    "Failed to create an instance of page:" + func.GetType().GenericTypeArguments[0]
-                );
-                Debug.WriteLine(ex);
-                throw ex;
+                if (StatelessForMauiApp.Debug)
+                {
+                    Debug.WriteLine(
+                        "Failed to create an instance of page:" + func.GetType().GenericTypeArguments[0]
+                    );
+                    Debug.WriteLine(ex);
+                }
+                throw;
             }
         }
 
         private void Init()
         {
-            this.StateMachine.OnTransitioned(async t =>
+            this.StateMachine.OnTransitionedAsync(async t =>
             {
                 Page? page = null;
                 MainThread
@@ -312,17 +324,11 @@ namespace StatelessForMAUI.StateMachine
                         () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
                     )
                     .SafeFireAndForget();
-                Dictionary<string, object?>? data = null;
-                if (
-                    t.Parameters != null
-                    && t.Parameters.Length >= 1
-                    && t.Parameters[0] is Dictionary<string, object?> _data
-                )
-                {
-                    data = _data;
-                }
                 bool isShell = Shell.Current is not null;
-                Console.WriteLine(t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination);
+                if (StatelessForMauiApp.Debug)
+                {
+                    Console.WriteLine(t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination);
+                }
 
                 if (isShell)
                 {
@@ -331,34 +337,43 @@ namespace StatelessForMAUI.StateMachine
 
                 if (t.Trigger == GO_BACK)
                 {
+                    if (t.Destination == CurrentPage?.GetPageStateName())
+                    {
+                        return;
+                    }
                     INavigation navigation = Navigation;
                     if (navigation.ModalStack.Count > 0)
                     {
                         var away = await navigation.PopModalAsync();
                         OnNavigatedAway(away, t.Destination);
-                        CurrentPage =
-                            navigation.ModalStack.LastOrDefault()
-                            ?? Application.Current.MainPage;
+                        var navigationCollection = navigation.ModalStack;
+                        CurrentPage = navigationCollection.Count > 0 ? navigationCollection[navigationCollection.Count - 1] : Application.Current?.MainPage;
                         OnNavigatedTo(CurrentPage, t.Source);
                         return;
                     }
                 }
-                if (Pages.ContainsKey(t.Destination))
+                if (Pages is not null && Pages.TryGetValue(t.Destination, out Func<Page>? value))
                 {
-                    page = BuildPage(Pages[t.Destination]);
+                    page = BuildPage(value);
                 }
                 if (page is null)
                 {
-                    Debug.WriteLine("page is null!", "Error");
+                    if (StatelessForMauiApp.Debug)
+                    {
+                        Debug.WriteLine("page is null!", "Error");
+                    }
                     return;
                 }
-                var attributte = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
+                var attribute = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
                 OnNavigatedAway(CurrentPage, t.Destination);
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    Debug.WriteLine("Dispatched");
+                    if (StatelessForMauiApp.Debug)
+                    {
+                        Debug.WriteLine("Dispatched");
+                    }
                     CurrentPage = page;
-                    if (attributte?.isRoot ?? false)
+                    if (attribute?.isRoot ?? false)
                     {
                         await PushRootPage(page);
                         OnNavigatedTo(page, t.Source);
@@ -370,7 +385,7 @@ namespace StatelessForMAUI.StateMachine
             });
         }
 
-        private async Task PushRootPage(Page page)
+        private static async Task PushRootPage(Page page)
         {
             await Task.Yield();
             bool popToRoot = false;
@@ -388,11 +403,11 @@ namespace StatelessForMAUI.StateMachine
                 && flyout.Detail.Navigation is INavigation flyNavigation
             )
             {
-                StatelessForMAUIApp.Navigation = flyNavigation;
+                StatelessForMauiApp.Navigation = flyNavigation;
             }
             if (popToRoot)
             {
-                await StatelessForMAUIApp.Navigation.PopToRootAsync();
+                await StatelessForMauiApp.Navigation.PopToRootAsync();
             }
         }
     }

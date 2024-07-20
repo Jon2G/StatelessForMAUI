@@ -11,22 +11,22 @@ using StatelessForMAUI.Pages;
 
 namespace StatelessForMAUI.StateMachine
 {
-    public class ConectivityStateMachine
+    public class ConnectivityStateMachine: StateMachineBase<ConectivityState, ConectivityTrigger>
     {
-        public const string ON_DISCONECTED_FROM_INTERNET = "OnDisconectedFromInternet";
+        public const string ON_DISCONECTED_FROM_INTERNET = "OnDisconnectedFromInternet";
         public const string ON_CONNECTED_TO_INTERNET = "OnConnectedToInternet";
         public const string ON_NETWORK_ERROR = "OnNetworkError";
-        public static ConectivityStateMachine Instance
+        public static ConnectivityStateMachine Instance
         {
-            get =>Application.Current!.Handler.MauiContext!.Services!.GetRequiredService<ConectivityStateMachine>();
+            get =>Application.Current!.Handler.MauiContext!.Services!.GetRequiredService<ConnectivityStateMachine>();
         }
-        internal readonly Type? OnDisconectedFromInternetPage;
+        internal readonly Type? OnDisconnectedFromInternetPage;
         internal readonly Type? OnNetworkErrorPage;
         public static bool HasInternet => Instance.StateMachine.State == ConectivityState.On;
-        public readonly StateMachine<ConectivityState, ConectivityTrigger> StateMachine;
+        public override StateMachine<ConectivityState, ConectivityTrigger> StateMachine { get; protected set; }
 
-        public readonly ReadOnlyDictionary<NetworkAccess, ConectivityTrigger> NetworkAccessConectivity =
-            new ReadOnlyDictionary<NetworkAccess, ConectivityTrigger>(new Dictionary<NetworkAccess, ConectivityTrigger>
+        public readonly ReadOnlyDictionary<NetworkAccess, ConectivityTrigger> NetworkAccessConnectivity =
+            new(new Dictionary<NetworkAccess, ConectivityTrigger>
             {
                 { NetworkAccess.Unknown, ConectivityTrigger.OnNetworkTypeChanged },
                 { NetworkAccess.None, ConectivityTrigger.OnDisconnected },
@@ -42,10 +42,10 @@ namespace StatelessForMAUI.StateMachine
         >?>
 > _TriggerWithParameters;
 
-        public ConectivityStateMachine(Type? onDisconectedFromInternet,
+        public ConnectivityStateMachine(Type? onDisconnectedFromInternet,
             Type? onNetworkError)
         {
-            this.OnDisconectedFromInternetPage = onDisconectedFromInternet;
+            this.OnDisconnectedFromInternetPage = onDisconnectedFromInternet;
             this.OnNetworkErrorPage = onNetworkError;
             this.StateMachine = new(ConectivityState.Unknown);
             this.StateMachine.Configure(ConectivityState.Unknown)
@@ -81,12 +81,12 @@ namespace StatelessForMAUI.StateMachine
             });
 
             Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
-            this.StateMachine.Fire(GetConectivityTrigger());
+            this.StateMachine.Fire(GetConnectivityTrigger());
             Init();
 
         }
 
-        ~ConectivityStateMachine()
+        ~ConnectivityStateMachine()
         {
             Connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
         }
@@ -94,13 +94,13 @@ namespace StatelessForMAUI.StateMachine
 
         void Connectivity_ConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
         {
-            this.StateMachine.Fire(GetConectivityTrigger(e.NetworkAccess));
+            this.StateMachine.Fire(GetConnectivityTrigger(e.NetworkAccess));
         }
 
-        private ConectivityTrigger GetConectivityTrigger(NetworkAccess? accessType = null)
+        private ConectivityTrigger GetConnectivityTrigger(NetworkAccess? accessType = null)
         {
             accessType ??= Connectivity.Current.NetworkAccess;
-            return this.NetworkAccessConectivity[(NetworkAccess)accessType];
+            return this.NetworkAccessConnectivity[(NetworkAccess)accessType];
         }
 
         private void Init()
@@ -142,7 +142,7 @@ namespace StatelessForMAUI.StateMachine
         {
             Instance.StateMachine.Fire(trigger);
         }
-        public static ConectivityStateMachine Fire(
+        public static ConnectivityStateMachine Fire(
            ConectivityTrigger trigger,
            Dictionary<string, object?>? parameters
        )

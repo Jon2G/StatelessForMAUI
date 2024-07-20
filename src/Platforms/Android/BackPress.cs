@@ -9,18 +9,12 @@ using Android.Widget;
 using AndroidX.Activity;
 using StatelessForMAUI.StateMachine;
 
-namespace StatelessForMAUI
+namespace StatelessForMAUI.Platforms.Android
 {
-    public class BackPress : OnBackPressedCallback
+    public class BackPress(Activity activity) : OnBackPressedCallback(true)
     {
-        private readonly Activity activity;
+        private readonly Activity activity = activity;
         private static long backPressed;
-
-        public BackPress(Activity activity)
-            : base(true)
-        {
-            this.activity = activity;
-        }
 
         public override void HandleOnBackPressed()
         {
@@ -42,13 +36,6 @@ namespace StatelessForMAUI
                 }
                 else
                 {
-                    //App.AlertConfirmation("Question?", "Would you like to play a game", "Sí", "No!")
-                    //    .ContinueWith(t =>
-                    //    {
-                    //        Console.WriteLine(t.Result);
-                    //    });
-                    //App.ToastSnack("Close");
-                    //Toast.MakeText(activity, "Close", ToastLength.Long)?.Show();
                     backPressed = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 }
             }

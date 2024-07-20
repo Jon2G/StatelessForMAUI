@@ -10,11 +10,11 @@ using StatelessForMAUI.Pages;
 
 namespace StatelessForMAUI.StateMachine
 {
-    public class AppLifeStateMachine
+    public class AppLifeStateMachine : StateMachineBase<AppLifeState, AppLifeTrigger>
     {
-        public static AppLifeStateMachine Instance => StatelessForMAUIApp.AppLifeStateMachine;
-        public readonly StateMachine<AppLifeState, AppLifeTrigger> StateMachine;
-       
+        public static AppLifeStateMachine Instance => StatelessForMauiApp.AppLifeStateMachine ?? throw new NullReferenceException("AppLifeStateMachine has not been activated yet.");
+        public override StateMachine<AppLifeState, AppLifeTrigger> StateMachine { get; protected set; }
+
 
         public AppLifeStateMachine()
         {
@@ -30,8 +30,7 @@ namespace StatelessForMAUI.StateMachine
 
             this.StateMachine.Configure(AppLifeState.Resume)
                 .Permit(AppLifeTrigger.OnResume, AppLifeState.Running)
-                .Permit(AppLifeTrigger.OnBackground, AppLifeState.Background)
-                .OnEntry(t => ResumeApp());
+                .Permit(AppLifeTrigger.OnBackground, AppLifeState.Background);
 
             this.StateMachine.Configure(AppLifeState.Background)
                 .Permit(AppLifeTrigger.OnResume, AppLifeState.Resume)
@@ -39,20 +38,15 @@ namespace StatelessForMAUI.StateMachine
                 .Ignore(AppLifeTrigger.OnBackground);
 
             this.StateMachine.Configure(AppLifeState.Running)
-                .OnEntry(t =>
-                {
-                    if (!t.IsReentry)
-                    {
-                        InitializedApp();
-                    }
-                })
                 .PermitReentry(AppLifeTrigger.OnResume)
                 .Permit(AppLifeTrigger.OnBackground, AppLifeState.Background);
-
-            this.StateMachine.OnTransitioned(t =>
+            if (StatelessForMauiApp.Debug)
             {
-                Console.WriteLine(t.Source.ToString() + "->" + t.Destination);
-            });
+                this.StateMachine.OnTransitioned(t =>
+                {
+                    Console.WriteLine(t.Source.ToString() + "->" + t.Destination);
+                });
+            }
             Init();
         }
 
@@ -61,16 +55,7 @@ namespace StatelessForMAUI.StateMachine
             this.StateMachine.Fire(AppLifeTrigger.OnInitialized);
         }
 
-        private void InitializedApp()
-        {
-            //Acciones a ejecutar después de inicializar app
-        }
-
-        private void ResumeApp()
-        {
-            //Acciones a ejecutar después de resumir app
-        }
-        public AppLifeStateMachine Fire(AppLifeTrigger AppLifeTrigger)
+        public static AppLifeStateMachine Fire(AppLifeTrigger AppLifeTrigger)
         {
             Instance.StateMachine.Fire(AppLifeTrigger);
             return Instance;

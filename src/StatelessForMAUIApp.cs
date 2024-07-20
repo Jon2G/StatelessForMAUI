@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 
 namespace StatelessForMAUI
 {
-    public class StatelessForMAUIApp : Application
+    public class StatelessForMauiApp : Application
     {
-        private static INavigation navigation;
+        private static INavigation? navigation;
         public static INavigation Navigation
         {
             get => navigation ??= Application.Current!.MainPage!.Navigation;
@@ -23,39 +23,32 @@ namespace StatelessForMAUI
             }
         }
 
-
-        private Type? SplashPageType;
-        private Type? OnDisconectedFromInternetType;
-        private Type? OnNetworkErrorType;
-        internal static ConectivityStateMachine ConectivityStateMachine { get; private set; }
-        internal static NavigationStateMachine NavigationStateMachine { get; private set; }
-        internal static AppLifeStateMachine AppLifeStateMachine { get; private set; }
-
+        internal static ConnectivityStateMachine? ConnectivityStateMachine { get; private set; }
+        internal static NavigationStateMachine? NavigationStateMachine { get; private set; }
+        internal static AppLifeStateMachine? AppLifeStateMachine { get; private set; }
+        internal static bool Debug { get; private set; }
         public Page Initialize(Type? splashPageType = null,
-            Type? onDisconectedFromInternet = null,
+            Type? onDisconnectedFromInternet = null,
             Type? onNetworkError = null, bool debug = false)
         {
-            SplashPageType = splashPageType;
-            OnDisconectedFromInternetType = onDisconectedFromInternet;
-            OnNetworkErrorType = onNetworkError;
-            var splashPage = ActivatePage(SplashPageType);
+            Debug = debug;
+            var splashPage = ActivatePage(splashPageType);
             splashPage.Appearing += SplashPage_Appearing;
 
-            ConectivityStateMachine = new ConectivityStateMachine(
-   onDisconectedFromInternet: onDisconectedFromInternet,
+            ConnectivityStateMachine = new ConnectivityStateMachine(
+   onDisconnectedFromInternet: onDisconnectedFromInternet,
    onNetworkError: onNetworkError
    );
-            NavigationStateMachine = new NavigationStateMachine(SplashPageType);
+            NavigationStateMachine = new NavigationStateMachine(splashPageType);
+            NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
+            NavigationStateMachine.CurrentPage = splashPage;
             AppLifeStateMachine = new AppLifeStateMachine();
-#if WINDOWS
-            makeDiagrams();
-#endif
             return new FlyoutPage()
             {
                 Detail = splashPage,
                 ////
                 Flyout = new ContentPage() { Title = "flyout" },
-            }; ;
+            }; 
         }
 
         private void SplashPage_Appearing(object? sender, EventArgs e)
@@ -64,7 +57,7 @@ namespace StatelessForMAUI
             {
                 sp.Appearing += SplashPage_Appearing;
             }
-            StatelessForMAUIApp.AppLifeStateMachine.Fire(AppLifeTrigger.OnStart);
+            AppLifeStateMachine.Fire(AppLifeTrigger.OnStart);
         }
 
         internal static Page ActivatePage(Type? type)
@@ -77,7 +70,7 @@ namespace StatelessForMAUI
             {
                 throw new InvalidOperationException("Type must be a concrete class");
             }
-            if (type.IsSubclassOf(typeof(Page)) == false)
+            if (!type.IsSubclassOf(typeof(Page)))
             {
                 if (type.IsSubclassOf(typeof(View)))
                 {
@@ -95,38 +88,11 @@ namespace StatelessForMAUI
             AppLifeStateMachine.Instance.StateMachine.Fire(AppLifeTrigger.OnResume);
         }
 
-        protected override void OnStart()
-        {
-            base.OnStart();
-        }
-
         protected override void OnSleep()
         {
             base.OnSleep();
             AppLifeStateMachine.Instance.StateMachine.Fire(AppLifeTrigger.OnBackground);
         }
-
-#if WINDOWS
-        private void makeDiagrams()
-        {
-
-            string graph = string.Empty;
-
-            var directory = new DirectoryInfo(
-                "C:\\Users\\jonathgarcia\\Documents\\VS\\Nominas\\Docs\\Diagramas"
-            );
-
-            File.WriteAllText(directory.FullName + "/AppLifeStateMachine.dot", graph);
-
-            graph = UmlDotGraph.Format(NavigationStateMachine.StateMachine.GetInfo());
-            File.WriteAllText(directory.FullName + "/NavigationStateMachine.dot", graph);
-
-            graph = UmlDotGraph.Format(ConectivityStateMachine.StateMachine.GetInfo());
-            File.WriteAllText(directory.FullName + "/ConectivityStateMachine.dot", graph);
-
-            graph = UmlDotGraph.Format(AppLifeStateMachine.StateMachine.GetInfo());
-            File.WriteAllText(directory.FullName + "/AppLifeStateMachine.dot", graph);
-        }
-#endif
+   
     }
 }
