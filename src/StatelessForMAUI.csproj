@@ -28,6 +28,7 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Version>1.0.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
