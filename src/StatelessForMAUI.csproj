@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
@@ -28,9 +28,15 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.0.1</Version>
+		<Version>1.0.0.2</Version>
+		<!-- added this line -->
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
-
+	<Target Name="PrePackage" BeforeTargets="BuildPackage">
+		<PropertyGroup>
+			<BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
+		</PropertyGroup>
+	</Target>
 	<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
 		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.70" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
@@ -53,8 +59,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\stateless\src\Stateless\Stateless.csproj" />
+		<ProjectReference Include="..\..\stateless\src\Stateless\Stateless.csproj">
+			<ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+			<PrivateAssets>All</PrivateAssets>
+			<IncludeAssets>Stateless.dll</IncludeAssets>
+			<Pack>true</Pack>
+		</ProjectReference>
 	</ItemGroup>
+	
+	<Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>
+		</ItemGroup>
+	</Target>
 
 	<ItemGroup>
 	  <Compile Update="Platforms\Android\BackPress.cs">
