@@ -134,7 +134,7 @@ namespace StatelessForMAUI.StateMachine
     public class NavigationStateMachine : StateMachineBase<string, string>
     {
         public const string GO_BACK = "GoBack";
-        private static INavigation Navigation => StatelessForMauiApp.Navigation;
+        private static INavigation? Navigation => StatelessForMauiApp.Navigation;
         public static NavigationStateMachine Instance
         {
             get => Container.GetRequired<NavigationStateMachine>();
@@ -195,13 +195,20 @@ namespace StatelessForMAUI.StateMachine
             Pages = new ReadOnlyDictionary<string, Func<Page>>(pagesDictionary);
             Init();
         }
-
+        private static INavigation SetEmptyRootPage()
+        {
+            var navigationPage = new NavigationPage(new ContentPage());
+            StatelessForMauiApp.Current.MainPage = navigationPage;
+            StatelessForMauiApp.RootPage = navigationPage;
+            StatelessForMauiApp.Navigation = navigationPage.Navigation;
+            return navigationPage.Navigation;
+        }
         internal static async Task<string> DynamicGoBack()
         {
             string backPageName = string.Empty;
             await MainThread.InvokeOnMainThreadAsync(async () =>
              {
-                 INavigation navigation = Navigation;
+                 INavigation navigation = Navigation ?? SetEmptyRootPage();
                  if (navigation.ModalStack.Count > 0)
                  {
                      Page? away = await navigation.PopModalAsync();
@@ -305,78 +312,96 @@ namespace StatelessForMAUI.StateMachine
                 throw;
             }
         }
-
+        private bool IsInTransition;
         private void Init()
         {
             this.StateMachine.OnTransitionedAsync(async t =>
             {
-                Page? page = null;
-                if (this.HapticFeedBack)
+                while (IsInTransition)
                 {
-                    MainThread
-                        .InvokeOnMainThreadAsync(
-                            () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
-                        )
-                        .SafeFireAndForget();
+                    await Task.Delay(100);
                 }
-                bool isShell = Shell.Current is not null;
-                if (StatelessForMauiApp.Debug)
+                IsInTransition = true;
+                try
                 {
-                    Console.WriteLine(t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination);
-                }
-
-                if (isShell)
-                {
-                    Shell.Current!.FlyoutIsPresented = false;
-                }
-
-                if (t.Trigger == GO_BACK)
-                {
-                    if (t.Destination == CurrentPage?.GetPageStateName())
+                    Page? page = null;
+                    if (this.HapticFeedBack)
                     {
-                        return;
+                        MainThread
+                            .InvokeOnMainThreadAsync(
+                                () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
+                            )
+                            .SafeFireAndForget();
                     }
-                    INavigation navigation = Navigation;
-                    if (navigation.ModalStack.Count > 0)
-                    {
-                        var away = await navigation.PopModalAsync();
-                        OnNavigatedAway(away, t.Destination);
-                        var navigationCollection = navigation.ModalStack;
-                        CurrentPage = navigationCollection.Count > 0 ? navigationCollection[navigationCollection.Count - 1] : Application.Current?.MainPage;
-                        OnNavigatedTo(CurrentPage, t.Source);
-                        return;
-                    }
-                }
-                if (Pages is not null && Pages.TryGetValue(t.Destination, out Func<Page>? value))
-                {
-                    page = BuildPage(value);
-                }
-                if (page is null)
-                {
+                    bool isShell = Shell.Current is not null;
                     if (StatelessForMauiApp.Debug)
                     {
-                        Debug.WriteLine("page is null!", "Error");
+                        Console.WriteLine(t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination);
                     }
-                    return;
-                }
-                var attribute = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
-                OnNavigatedAway(CurrentPage, t.Destination);
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    if (StatelessForMauiApp.Debug)
+
+                    if (isShell)
                     {
-                        Debug.WriteLine("Dispatched");
+                        Shell.Current!.FlyoutIsPresented = false;
                     }
-                    CurrentPage = page;
-                    if (attribute?.isRoot ?? false)
+
+                    if (t.Trigger == GO_BACK)
                     {
-                        await PushRootPage(page);
+                        var navigation = Navigation ?? SetEmptyRootPage();
+                        if (t.Destination == CurrentPage?.GetPageStateName())
+                        {
+                            return;
+                        }
+
+                        if (navigation.ModalStack.Count > 0)
+                        {
+                            var away = await navigation.PopModalAsync();
+                            OnNavigatedAway(away, t.Destination);
+                            var navigationCollection = navigation.ModalStack;
+                            CurrentPage = navigationCollection.Count > 0 ? navigationCollection[navigationCollection.Count - 1] : Application.Current?.MainPage;
+                            OnNavigatedTo(CurrentPage, t.Source);
+                            return;
+                        }
+                    }
+                    if (Pages is not null && Pages.TryGetValue(t.Destination, out Func<Page>? value))
+                    {
+                        page = BuildPage(value);
+                    }
+                    if (page is null)
+                    {
+                        if (StatelessForMauiApp.Debug)
+                        {
+                            Debug.WriteLine("page is null!", "Error");
+                        }
+                        return;
+                    }
+                    var attribute = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
+                    OnNavigatedAway(CurrentPage, t.Destination);
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        if (StatelessForMauiApp.Debug)
+                        {
+                            Debug.WriteLine("Dispatched");
+                        }
+                        CurrentPage = page;
+                        if (attribute?.isRoot ?? false)
+                        {
+                            await PushRootPage(page);
+                            OnNavigatedTo(page, t.Source);
+                            return;
+                        }
+                        var navigation = Navigation ?? SetEmptyRootPage();
+                        await navigation.PushModalAsync(page);
                         OnNavigatedTo(page, t.Source);
-                        return;
-                    }
-                    await Navigation.PushModalAsync(page);
-                    OnNavigatedTo(page, t.Source);
-                });
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex);
+                }
+                finally
+                {
+                    IsInTransition = false;
+                }
             });
         }
 
@@ -400,6 +425,7 @@ namespace StatelessForMAUI.StateMachine
                 }
                 StatelessForMauiApp.Navigation = Application.Current!.MainPage.Navigation;
 
+                StatelessForMauiApp.RootPage = page;
             }
 
             if (
@@ -407,6 +433,7 @@ namespace StatelessForMAUI.StateMachine
                 && flyout.Detail.Navigation is INavigation flyNavigation
             )
             {
+                StatelessForMauiApp.RootPage = flyout;
                 StatelessForMauiApp.Navigation = flyNavigation;
             }
             if (popToRoot)

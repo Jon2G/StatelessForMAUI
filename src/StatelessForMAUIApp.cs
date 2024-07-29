@@ -7,14 +7,15 @@ namespace StatelessForMAUI
     public class StatelessForMauiApp : Application
     {
         private static INavigation? navigation;
-        public static INavigation Navigation
+        public static INavigation? Navigation
         {
-            get => navigation ??= Application.Current!.MainPage!.Navigation;
+            get => navigation ??= Application.Current?.MainPage?.Navigation;
             internal set
             {
                 navigation = value;
             }
         }
+        public static Page? RootPage { get; internal set; }
 
         //internal static ConnectivityStateMachine? ConnectivityStateMachine { get; private set; }
         //internal static NavigationStateMachine? NavigationStateMachine { get; private set; }
@@ -38,11 +39,14 @@ namespace StatelessForMAUI
    onNetworkError: onNetworkError
    ));
             Container.Register(new NavigationStateMachine(splashPageType, HapticFeedBackOnPageChange));
-            NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
             NavigationStateMachine.CurrentPage = splashPage;
             Container.Register(new AppLifeStateMachine());
             NavigationPage.SetHasNavigationBar(splashPage, false);
-            return MainPage = new NavigationPage(splashPage);
+            MainPage = new NavigationPage(splashPage);
+            Navigation = MainPage.Navigation;
+            RootPage = MainPage;
+            NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
+            return MainPage;
         }
 
         private void SplashPage_Appearing(object? sender, EventArgs e)

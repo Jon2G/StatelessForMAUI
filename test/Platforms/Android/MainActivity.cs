@@ -13,9 +13,10 @@ public class MainActivity : MauiAppCompatActivity
         base.OnCreate(savedInstanceState);
         OnBackPressedDispatcher.AddCallback(new BackPress(this));
     }
+    [Obsolete]
     public override void OnBackPressed()
     {
-        base.OnBackPressed();
+        //base.OnBackPressed(); DONT FORGET TO REMOVE BASE CALL
         BackPress.OnBackPressed(this);
     }
 }
