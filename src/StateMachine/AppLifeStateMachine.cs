@@ -2,6 +2,8 @@
 using StatelessForMAUI.Pages;
 using StatelessForMAUI.StateMachine.States;
 using StatelessForMAUI.StateMachine.Triggers;
+using System.Diagnostics;
+using System.Xml.Linq;
 using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
@@ -34,6 +36,7 @@ namespace StatelessForMAUI.StateMachine
                 .Ignore(AppLifeTrigger.OnBackground);
 
             this.StateMachine.Configure(AppLifeState.Running)
+                .Ignore(AppLifeTrigger.OnStart)
                 .PermitReentry(AppLifeTrigger.OnResume)
                 .Permit(AppLifeTrigger.OnBackground, AppLifeState.Background);
             if (StatelessForMauiApp.Debug)
@@ -43,6 +46,13 @@ namespace StatelessForMAUI.StateMachine
                     Console.WriteLine(t.Source.ToString() + "->" + t.Destination);
                 });
             }
+            this.StateMachine.OnUnhandledTrigger((t, s) =>
+            {
+                if (StatelessForMauiApp.Debug)
+                {
+                    Debug.WriteLine($"Unhandled trigger {t} in state {s}");
+                }
+            });
             Init();
         }
 

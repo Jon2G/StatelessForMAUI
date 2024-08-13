@@ -30,7 +30,7 @@ namespace StatelessForMAUI
             bool HapticFeedBackOnPageChange = false,
             bool debug = false)
         {
-            Debug = debug;
+            StatelessForMauiApp.Debug= debug;
             var splashPage = ActivatePage(splashPageType);
             splashPage.Appearing += SplashPage_Appearing;
 
