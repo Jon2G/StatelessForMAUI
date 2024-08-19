@@ -57,15 +57,6 @@
 	  <PackageReference Include="AsyncAwaitBestPractices" Version="8.0.0" />
 	  <PackageReference Include="TinyTypeContainer" Version="1.0.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\..\stateless\src\Stateless\Stateless.csproj">
-			<ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-			<PrivateAssets>All</PrivateAssets>
-			<IncludeAssets>Stateless.dll</IncludeAssets>
-			<Pack>true</Pack>
-		</ProjectReference>
-	</ItemGroup>
 	
 	<Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
 		<ItemGroup>
