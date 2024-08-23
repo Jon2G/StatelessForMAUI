@@ -28,7 +28,7 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.0.3</Version>
+		<Version>1.0.0.4</Version>
 		<!-- added this line -->
 		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
@@ -37,10 +37,10 @@
 			<BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
 		</PropertyGroup>
 	</Target>
-	<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
+	<!--<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-	</ItemGroup>
+	</ItemGroup>-->
 
 	<ItemGroup>
 	  <None Include="..\LICENSE">
@@ -63,6 +63,10 @@
 			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
 		</ItemGroup>
 	</Target>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\..\stateless\src\Stateless\Stateless.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <Compile Update="Platforms\Android\BackPress.cs">
