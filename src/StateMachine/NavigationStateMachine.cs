@@ -1,10 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Reflection;
-using AsyncAwaitBestPractices;
+﻿using AsyncAwaitBestPractices;
 using Stateless;
 using StatelessForMAUI.Attributes;
 using StatelessForMAUI.Pages;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
@@ -221,7 +221,7 @@ namespace StatelessForMAUI.StateMachine
             var navigationPage = new NavigationPage(new ContentPage());
             if (Application.Current is not null)
             {
-               Application.Current.MainPage = navigationPage;
+                Application.Current.MainPage = navigationPage;
             }
             AppLifeStateMachine.RootPage = navigationPage;
             AppLifeStateMachine.Navigation = navigationPage.Navigation;
@@ -231,10 +231,11 @@ namespace StatelessForMAUI.StateMachine
         private static Page GetCurrentPage(INavigation navigation)
         {
             IReadOnlyList<Page> navigationCollection;
-            if(navigation.ModalStack is not null && navigation.ModalStack.Count > 0)
+            if (navigation.ModalStack is not null && navigation.ModalStack.Count > 0)
             {
                 navigationCollection = navigation.ModalStack;
-            }else
+            }
+            else
             {
                 navigationCollection = navigation.NavigationStack;
             }
@@ -344,11 +345,11 @@ namespace StatelessForMAUI.StateMachine
             OnNavigatedTo(to, from.GetPageStateName());
         }
 
-        private static async Task<Page> BuildPage(Func<Task<Page>> func)
+        private static Task<Page> BuildPage(Func<Page> func)
         {
             try
             {
-                return await func();
+                return MainThread.InvokeOnMainThreadAsync(func);
             }
             catch (Exception ex)
             {
@@ -425,7 +426,7 @@ namespace StatelessForMAUI.StateMachine
                         && Pages.TryGetValue(t.Destination, out Func<Task<Page>>? value)
                     )
                     {
-                        page =await BuildPage(value);
+                        page = await BuildPage(value);
                     }
                     if (page is null)
                     {
