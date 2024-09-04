@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android34.0;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks>net8.0;net8.0-android34.0;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
@@ -28,7 +28,7 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.0.1</Version>
+		<Version>1.0.2</Version>
 		<!-- added this line -->
 		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
@@ -56,7 +56,7 @@
 	<ItemGroup>
 	  <PackageReference Include="AsyncAwaitBestPractices" Version="8.0.0" />
 	  <PackageReference Include="TinyTypeContainer" Version="1.0.1" />
-		<PackageReference Include="KeyboardVisibilityListener-MAUI" Version="1.0.1" />
+		<PackageReference Include="KeyboardVisibilityListener-MAUI" Version="1.0.2" />
 	</ItemGroup>
 	
 	<Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">

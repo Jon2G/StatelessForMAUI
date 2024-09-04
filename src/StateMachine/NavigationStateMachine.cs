@@ -345,7 +345,7 @@ namespace StatelessForMAUI.StateMachine
             OnNavigatedTo(to, from.GetPageStateName());
         }
 
-        private static Task<Page> BuildPage(Func<Page> func)
+        private static Task<Page> BuildPage(Func<Task<Page>> func)
         {
             try
             {
