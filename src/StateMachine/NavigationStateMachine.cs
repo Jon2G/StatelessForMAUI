@@ -3,7 +3,6 @@ using Stateless;
 using StatelessForMAUI.Attributes;
 using StatelessForMAUI.Pages;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Reflection;
 using TinyTypeContainer;
 
@@ -31,7 +30,7 @@ namespace StatelessForMAUI.StateMachine
         {
             if (AppLifeStateMachine.IsDebug)
             {
-                Debug.WriteLine("BuildState " + Name);
+                Console.WriteLine("BuildState " + Name);
             }
             if (StatelessNavigationAttribute.canGoBack)
             {
@@ -156,7 +155,7 @@ namespace StatelessForMAUI.StateMachine
                 {
                     if (AppLifeStateMachine.IsDebug)
                     {
-                        Debug.WriteLine($"Unhandled trigger {trigger} in state {state}");
+                        Console.WriteLine($"Unhandled trigger {trigger} in state {state}");
                     }
                     if (this.StateMachine.CanFire(GO_BACK))
                     {
@@ -274,7 +273,7 @@ namespace StatelessForMAUI.StateMachine
             });
             if (AppLifeStateMachine.IsDebug)
             {
-                Debug.WriteLine($"GoBack to ${backPageName}");
+                Console.WriteLine($"GoBack to ${backPageName}");
             }
             return backPageName;
         }
@@ -287,7 +286,10 @@ namespace StatelessForMAUI.StateMachine
 
         public static NavigationStateMachine Fire(string trigger)
         {
-            Debug.WriteLineIf(AppLifeStateMachine.IsDebug, "Fire: " + trigger);
+            if (AppLifeStateMachine.IsDebug)
+            {
+                Console.WriteLine("Fire: " + trigger);
+            }
             var instance = NavigationStateMachine.Instance;
             instance.StateMachine.FireAsync(trigger).SafeFireAndForget();
             return instance;
@@ -355,11 +357,11 @@ namespace StatelessForMAUI.StateMachine
             {
                 if (AppLifeStateMachine.IsDebug)
                 {
-                    Debug.WriteLine(
+                    Console.WriteLine(
                         "Failed to create an instance of page:"
                             + func.GetType().GenericTypeArguments[0]
                     );
-                    Debug.WriteLine(ex);
+                    Console.WriteLine(ex);
                 }
                 throw;
             }
@@ -432,7 +434,7 @@ namespace StatelessForMAUI.StateMachine
                     {
                         if (AppLifeStateMachine.IsDebug)
                         {
-                            Debug.WriteLine("page is null!", "Error");
+                            Console.WriteLine("page is null!", "Error");
                         }
                         return;
                     }
@@ -443,7 +445,7 @@ namespace StatelessForMAUI.StateMachine
                     {
                         if (AppLifeStateMachine.IsDebug)
                         {
-                            Debug.WriteLine("Dispatched");
+                            Console.WriteLine("Dispatched");
                         }
                         CurrentPage = page;
                         if (attribute?.isRoot ?? false)
@@ -459,7 +461,7 @@ namespace StatelessForMAUI.StateMachine
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex);
+                    Console.WriteLine(ex);
                 }
                 finally
                 {

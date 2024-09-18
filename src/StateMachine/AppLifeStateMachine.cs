@@ -2,8 +2,6 @@
 using StatelessForMAUI.Pages;
 using StatelessForMAUI.StateMachine.States;
 using StatelessForMAUI.StateMachine.Triggers;
-using System.Diagnostics;
-using System.Xml.Linq;
 using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
@@ -12,8 +10,8 @@ namespace StatelessForMAUI.StateMachine
     {
         public static AppLifeStateMachine Instance => Container.GetRequired<AppLifeStateMachine>();
         public override StateMachine<AppLifeState, AppLifeTrigger> StateMachine { get; protected set; }
-   
-        internal static bool IsDebug { get;  set; }
+
+        internal static bool IsDebug { get; set; }
         private static INavigation? navigation;
         public static INavigation? Navigation
         {
@@ -64,7 +62,7 @@ namespace StatelessForMAUI.StateMachine
             {
                 if (IsDebug)
                 {
-                    Debug.WriteLine($"Unhandled trigger {t} in state {s}");
+                    Console.WriteLine($"Unhandled trigger {t} in state {s}");
                 }
             });
             Init();
@@ -79,7 +77,7 @@ namespace StatelessForMAUI.StateMachine
         {
             if (IsDebug)
             {
-                Debug.WriteLine($"Life state machine fire{AppLifeTrigger}");
+                Console.WriteLine($"Life state machine fire{AppLifeTrigger}");
             }
             Instance.StateMachine.Fire(AppLifeTrigger);
             return Instance;
@@ -91,7 +89,7 @@ namespace StatelessForMAUI.StateMachine
             {
                 if (IsDebug)
                 {
-                    Debug.WriteLine($"Life state machine [{t.Trigger}] = {t.Source}->{t.Destination}");
+                    Console.WriteLine($"Life state machine [{t.Trigger}] = {t.Source}->{t.Destination}");
                 }
                 if (NavigationStateMachine.CurrentPage is IAppLifeStatePage statePage)
                 {
