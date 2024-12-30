@@ -57,7 +57,7 @@
 
 	<ItemGroup>
 	  <PackageReference Include="AsyncAwaitBestPractices" Version="9.0.0" />
-	  <PackageReference Include="Stateless" Version="5.16.0-dev-12479904394" />
+	  <PackageReference Include="Stateless" Version="5.17.0" />
 	  <PackageReference Include="TinyTypeContainer" Version="1.0.1" />
 		<PackageReference Include="KeyboardVisibilityListener-MAUI" Version="1.0.2" />
 	</ItemGroup>

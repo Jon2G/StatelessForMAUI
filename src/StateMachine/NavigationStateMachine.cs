@@ -277,35 +277,50 @@ namespace StatelessForMAUI.StateMachine
             }
             return backPageName;
         }
-
+        public static Task<NavigationStateMachine> GoToAsync<T>()
+            where T : Page
+        {
+            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)));
+        }
         public static NavigationStateMachine GoTo<T>()
             where T : Page
         {
             return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)));
         }
+        public static NavigationStateMachine GoTo<T, V>()
+            where T : Page
+            where V : new()
+        {
+            return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)), new V());
+        }
+        public static NavigationStateMachine GoTo<T, V>(V? param)
+            where T : Page
+        {
+            return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)), param);
+        }
 
-        public static NavigationStateMachine Fire(string trigger)
+        public static NavigationStateMachine Fire(string trigger, object? param = null)
         {
             if (AppLifeStateMachine.IsDebug)
             {
                 Console.WriteLine("Fire: " + trigger);
             }
             var instance = NavigationStateMachine.Instance;
-            instance.StateMachine.FireAsync(trigger).SafeFireAndForget();
+            instance.StateMachine.FireAsync(trigger, param).SafeFireAndForget();
             return instance;
         }
 
-        public static Task<NavigationStateMachine> FireAsync(string trigger)
+        public static Task<NavigationStateMachine> FireAsync(string trigger, object? param = null)
         {
             var instance = NavigationStateMachine.Instance;
-            return instance.StateMachine.FireAsync(trigger).ContinueWith(t => instance);
+            return instance.StateMachine.FireAsync(trigger, param).ContinueWith(t => instance);
         }
 
-        public static bool FireIfYouCan(string trigger)
+        public static bool FireIfYouCan(string trigger, object? param = null)
         {
             if (Instance.StateMachine.CanFire(trigger))
             {
-                Fire(trigger);
+                Fire(trigger, param);
                 return true;
             }
             return false;
@@ -437,6 +452,10 @@ namespace StatelessForMAUI.StateMachine
                             Console.WriteLine("page is null!", "Error");
                         }
                         return;
+                    }
+                    if (t.Parameters.Length == 1 && t.Parameters[0] is not null)
+                    {
+                        page.BindingContext = t.Parameters[0];
                     }
                     var attribute = page.GetType()
                         .GetCustomAttribute<StatelessNavigationAttribute>();
