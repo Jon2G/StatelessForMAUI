@@ -76,7 +76,7 @@ jobs:
         run: dotnet restore $SOLUTION
 
       - name: Build project
-        run: dotnet build $PROJECT --configuration Release
+        run: dotnet build $PROJECT --configuration Release --version $version
 
       - name: Build solution
         run: dotnet build $SOLUTION /p:Configuration=Release /p:Platform="Any CPU" /p:Version=$version
