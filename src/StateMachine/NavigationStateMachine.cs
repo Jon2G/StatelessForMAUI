@@ -282,6 +282,17 @@ namespace StatelessForMAUI.StateMachine
         {
             return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)));
         }
+        public static Task<NavigationStateMachine> GoToAsync<T,V>()
+            where T : Page
+            where V : new()
+        {
+            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), new V());
+        }
+        public static Task<NavigationStateMachine> GoToAsync<T, V>(V? param)
+            where T : Page
+        {
+            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), param);
+        }
         public static NavigationStateMachine GoTo<T>()
             where T : Page
         {
