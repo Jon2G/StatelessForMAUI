@@ -80,7 +80,7 @@ jobs:
         run: dotnet build $PROJECT --configuration Release
 
       - name: Build solution
-        run: dotnet build $SOLUTION /p:Configuration=Release /p:Platform="Any CPU"
+        run: dotnet build $SOLUTION /p:Configuration=Release /p:Platform="Any CPU" /p:Version=$version
 
       #- name: Run unit tests with report
       #  run: dotnet test $TEST_PROJECT --configuration Release --no-build --logger "trx;LogFileName=./../../src/TestResults.trx"
