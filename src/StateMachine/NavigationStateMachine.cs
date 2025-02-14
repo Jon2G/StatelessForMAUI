@@ -217,7 +217,7 @@ namespace StatelessForMAUI.StateMachine
 
         private static INavigation SetEmptyRootPage()
         {
-            var navigationPage = new NavigationPage(new ContentPage());
+            var navigationPage = new StatelessNavigationPage(new ContentPage());
             if (Application.Current is not null)
             {
                 Application.Current.MainPage = navigationPage;
@@ -282,7 +282,7 @@ namespace StatelessForMAUI.StateMachine
         {
             return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)));
         }
-        public static Task<NavigationStateMachine> GoToAsync<T,V>()
+        public static Task<NavigationStateMachine> GoToAsync<T, V>()
             where T : Page
             where V : new()
         {
@@ -345,6 +345,10 @@ namespace StatelessForMAUI.StateMachine
         public static void GoBack()
         {
             Application.Current?.Dispatcher.DispatchAsync(() => Fire(GO_BACK)).SafeFireAndForget();
+        }
+        public static async Task GoBackAsync()
+        {
+            await Application.Current?.Dispatcher.DispatchAsync(() => Fire(GO_BACK));
         }
 
         internal static void OnNavigatedAway(Page? away, string? to)
@@ -516,7 +520,7 @@ namespace StatelessForMAUI.StateMachine
                 }
                 else
                 {
-                    Application.Current!.MainPage = new NavigationPage(page);
+                    Application.Current!.MainPage = new StatelessNavigationPage(page);
                 }
                 AppLifeStateMachine.Navigation = Application.Current!.MainPage.Navigation;
 

@@ -1,4 +1,5 @@
-﻿using KeyboardVisibilityListener;
+﻿
+using KeyboardVisibilityListener;
 using Microsoft.Maui.LifecycleEvents;
 using StatelessForMAUI.StateMachine;
 using StatelessForMAUI.StateMachine.Triggers;
@@ -75,19 +76,18 @@ namespace StatelessForMAUI
         //.OnActivityResult((activity, requestCode, resultCode, data) => LogEvent(nameof(AndroidLifecycle.OnActivityResult), requestCode.ToString()))
         .OnCreate((activity, bundle) =>
         {
-        OnCreate(
-                   splashPageType: splashPageType,
-                   onNetworkError: onNetworkError,
-                   onDisconnectedFromInternet: onDisconnectedFromInternet,
-                   debug: debug,
-                   HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
+            OnCreate(
+                       splashPageType: splashPageType,
+                       onNetworkError: onNetworkError,
+                       onDisconnectedFromInternet: onDisconnectedFromInternet,
+                       debug: debug,
+                       HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
         })
         .OnStart((activity) =>
         {
             OnStart(splashPageType: splashPageType);
         })
-
-            .OnBackPressed((activity) =>
+        .OnBackPressed((activity) =>
             {
                 if (KeyboardVisibilityState.Instance.IsKeyboardOpen)
                 {
@@ -101,7 +101,7 @@ namespace StatelessForMAUI
             .OnSaveInstanceState((activity, bundle) => OnBackground())
             .OnRestoreInstanceState((activity, bundle) => OnResume())
             .OnPause((activity) => OnBackground())
-            .OnResume((activity) =>OnResume())
+            .OnResume((activity) => OnResume())
             )
 ;
 #elif IOS || MACCATALYST

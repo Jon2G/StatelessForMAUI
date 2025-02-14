@@ -67,21 +67,8 @@
 			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
 		</ItemGroup>
 	</Target>
-	
 
-	<ItemGroup>
-	  <Compile Update="Platforms\Android\BackPress.cs">
-	    <ExcludeFromCurrentConfiguration>true</ExcludeFromCurrentConfiguration>
-	  </Compile>
-	</ItemGroup>
 
-	<!--<ItemGroup>
-	  <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.91" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.91" />
-	</ItemGroup>-->
 
 
 </Project>
