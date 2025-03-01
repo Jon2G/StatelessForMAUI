@@ -56,10 +56,18 @@ namespace StatelessForMAUI
                 IsInitializated = true;
             }
         }
-        private static void OnBackground()
-        =>
-            AppLifeStateMachine.Fire(AppLifeTrigger.OnBackground);
+        private static void OnBackground() => AppLifeStateMachine.Fire(AppLifeTrigger.OnBackground);
         private static void OnResume() => AppLifeStateMachine.Fire(AppLifeTrigger.OnResume);
+        private static bool OnBackPressed()
+        {
+            if (KeyboardVisibilityState.Instance.IsKeyboardOpen)
+            {
+                KeyBoardUtils.ForceCloseKeyboard();
+                return true;
+            }
+            NavigationStateMachine.GoBack();
+            return true;
+        }
 
         public static MauiAppBuilder UseStatelessForMaui(this MauiAppBuilder builder,
             Type? splashPageType = null,
@@ -83,20 +91,8 @@ namespace StatelessForMAUI
                        debug: debug,
                        HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
         })
-        .OnStart((activity) =>
-        {
-            OnStart(splashPageType: splashPageType);
-        })
-        .OnBackPressed((activity) =>
-            {
-                if (KeyboardVisibilityState.Instance.IsKeyboardOpen)
-                {
-                    KeyBoardUtils.ForceCloseKeyboard();
-                    return true;
-                }
-                NavigationStateMachine.GoBack();
-                return true;
-            })
+        .OnStart((activity) => OnStart(splashPageType: splashPageType))
+        .OnBackPressed((activity) => OnBackPressed())
             //.OnStop((activity) => AppLifeStateMachine.Fire(AppLifeTrigger.))
             .OnSaveInstanceState((activity, bundle) => OnBackground())
             .OnRestoreInstanceState((activity, bundle) => OnResume())
@@ -105,14 +101,38 @@ namespace StatelessForMAUI
             )
 ;
 #elif IOS || MACCATALYST
-                    events.AddiOS(ios => ios
-                        .OnActivated((app) => AppLifeStateMachine.Fire(AppLifeTrigger.OnInitialized))
-                        .SceneOnActivated((app)=> AppLifeStateMachine.Fire(AppLifeTrigger.OnStart))
-                        //.OnResignActivation((app) => LogEvent(nameof(iOSLifecycle.OnResignActivation)))
-                        .DidEnterBackground((app) => OnBackground())
-                        .WillEnterForeground((app)=>OnResume())
-                        );
-                        //.WillTerminate((app) => LogEvent(nameof(iOSLifecycle.WillTerminate))));
+        events.AddiOS(ios => ios
+            .OnActivated((app) =>
+                {
+                    OnCreate(
+                        splashPageType: splashPageType,
+                        onNetworkError: onNetworkError,
+                        onDisconnectedFromInternet: onDisconnectedFromInternet,
+                        debug: debug,
+                        HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
+                    OnStart(splashPageType: splashPageType);
+                }
+                )
+
+            //AppLifeStateMachine.Fire(AppLifeTrigger.OnInitialized))
+            .SceneOnActivated((app) =>
+                {
+                    LogEvent(nameof(iOSLifecycle.SceneOnActivated));
+                }
+
+            )
+            .OnResignActivation((app) =>
+            {
+                LogEvent(nameof(iOSLifecycle.OnResignActivation));
+            })
+            .DidEnterBackground((app) => OnBackground())
+            .WillEnterForeground((app) => OnResume())
+            .WillTerminate((app) =>
+            {
+                LogEvent(nameof(iOSLifecycle.WillTerminate));
+            })
+            );
+        //.WillTerminate((app) => LogEvent(nameof(iOSLifecycle.WillTerminate))));
 #elif WINDOWS
         events.AddWindows(windows => windows
                .OnActivated((window, args) => OnStart(splashPageType: splashPageType))

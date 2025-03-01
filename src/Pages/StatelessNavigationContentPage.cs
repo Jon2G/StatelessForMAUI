@@ -2,6 +2,19 @@
 {
     public abstract class StatelessNavigationContentPage : ContentPage, IAppLifeStatePage, IConectivityStatePage, INavigationEventsPage
     {
+        protected StatelessNavigationContentPage()
+        {
+            Shell.SetBackButtonBehavior(this,new BackButtonBehavior()
+            {
+                Command= new Command(OnNavBarBackButtonPressed)
+            });
+        }
+
+        private void OnNavBarBackButtonPressed(object obj)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override bool OnBackButtonPressed()
         {
             return true;

@@ -1,32 +1,50 @@
-﻿using CommunityToolkit.Maui.Views;
+﻿using System.Windows.Input;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Core.Views;
+using CommunityToolkit.Maui.Views;
 using StatelessForMAUI.Attributes;
+using StatelessForMAUI.StateMachine;
 
 namespace SampleApp.Views;
-[StatelessNavigation(GoBackTarget: typeof(MainPage))]
+[StatelessNavigation(GoBackTarget: typeof(MainPage), permitReentry: true)]
 public partial class DrawingPage : ContentPage
 {
+    public DrawingViewModel ViewModel => BindingContext as DrawingViewModel;
     public DrawingPage()
     {
         InitializeComponent();
-        BindingContext = new DrawingViewModel();
     }
 
-    private async void SaveClicked(object sender, EventArgs e)
+    private void Button_Clicked(object sender, EventArgs e)
     {
-        var drawingLines = (BindingContext as DrawingViewModel)?.Lines.ToList();
 
-        if (drawingLines is null || drawingLines.Count < 1)
-        {
-            return;
-        }
-
-        var points = drawingLines.SelectMany(x => x.Points).ToList();
-
-        var stream = await DrawingView.GetImageStream(
-            drawingLines,
-            new Size(points.Max(x => x.X) - points.Min(x => x.X), points.Max(x => x.Y) - points.Min(x => x.Y)),
-            Colors.Gray);
-
-        GeneratedImage.Source = ImageSource.FromStream(() => stream);
     }
+
+    private void AnotherPageClicked(object sender, EventArgs e)
+    {
+        NavigationStateMachine.GoTo<DrawingPage, DrawingViewModel>(new() { NestedLevel = this.ViewModel.NestedLevel + 1 });
+    }
+}
+public class DrawingViewModel : BaseViewModel
+{
+    [ObservableProperty]
+    public ObservableCollection<IDrawingLine> Lines { get; set; } = new();
+
+    [ObservableProperty]
+    public int NestedLevel { get; set; } = 1;
+
+    [ObservableProperty]
+    public ICommand ClearCommand { get; private set; }
+
+    public DrawingViewModel()
+    {
+        ClearCommand = new Command(Clear);
+    }
+
+    private void Clear()
+    {
+        Lines.Clear();
+    }
+
+
 }

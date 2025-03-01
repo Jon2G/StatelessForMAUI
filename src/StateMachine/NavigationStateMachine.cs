@@ -122,9 +122,7 @@ namespace StatelessForMAUI.StateMachine
             if (StatelessNavigationAttribute.permitReentry)
             {
                 stateMachine.Configure(this.Name).PermitReentry(this.Trigger);
-            }
-
-            if (StatelessNavigationAttribute.selfIgnore)
+            }else if (StatelessNavigationAttribute.selfIgnore)
             {
                 stateMachine.Configure(this.Name).Ignore(this.Trigger);
             }
@@ -251,20 +249,59 @@ namespace StatelessForMAUI.StateMachine
                 return Application.Current?.MainPage;
             }
         }
+        internal static async Task<string> PopPage(Func<Task<Page?>> PopAction, INavigation navigation)
+        {
+            Page? away = await PopAction();
+            CurrentPage = GetCurrentPage(navigation);
+            OnNavigatedAway(away, CurrentPage);
+            OnNavigatedTo(CurrentPage, away);
+            return CurrentPage!.GetPageStateName();
+        }
 
+        internal static async Task PopPageFixed(Func<Task<Page?>> PopAction, INavigation navigation, StateMachine<string, string>.Transition t)
+        {
+            var away = await navigation.PopModalAsync();
+            OnNavigatedAway(away, t.Destination);
+            var navigationCollection = navigation.ModalStack;
+            CurrentPage =
+                navigationCollection.Count > 0
+                    ? navigationCollection[^1]
+                    : Application.Current?.MainPage;
+            OnNavigatedTo(CurrentPage, t.Source);
+            return;
+        }
+
+        internal static async Task FixedGoBack(StateMachine<string, string>.Transition transition)
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                INavigation navigation = EnsureNavigationPageIsSet();
+
+                if (navigation.ModalStack.Count > 0)
+                {
+                    await PopPageFixed(() => navigation.PopModalAsync(), navigation, transition);
+                }
+                else if (navigation.NavigationStack.Count > 0)
+                {
+                    await PopPageFixed(() => navigation.PopAsync(), navigation, transition);
+                }
+            });
+
+
+        }
         internal static async Task<string> DynamicGoBack()
         {
             string backPageName = string.Empty;
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                INavigation navigation = AppLifeStateMachine.Navigation ?? SetEmptyRootPage();
+                INavigation navigation = EnsureNavigationPageIsSet();
                 if (navigation.ModalStack.Count > 0)
                 {
-                    Page? away = await navigation.PopModalAsync();
-                    CurrentPage = GetCurrentPage(navigation);
-                    OnNavigatedAway(away, CurrentPage);
-                    OnNavigatedTo(CurrentPage, away);
-                    backPageName = CurrentPage!.GetPageStateName();
+                    backPageName = await PopPage(() => navigation.PopModalAsync(), navigation);
+                }
+                else if (navigation.NavigationStack.Count > 0)
+                {
+                    backPageName = await PopPage(() => navigation.PopAsync(), navigation);
                 }
                 else
                 {
@@ -434,24 +471,12 @@ namespace StatelessForMAUI.StateMachine
 
                     if (t.Trigger == GO_BACK)
                     {
-                        var navigation = AppLifeStateMachine.Navigation ?? SetEmptyRootPage();
+                        EnsureNavigationPageIsSet();
                         if (t.Destination == CurrentPage?.GetPageStateName())
                         {
                             return;
                         }
-
-                        if (navigation.ModalStack.Count > 0)
-                        {
-                            var away = await navigation.PopModalAsync();
-                            OnNavigatedAway(away, t.Destination);
-                            var navigationCollection = navigation.ModalStack;
-                            CurrentPage =
-                                navigationCollection.Count > 0
-                                    ? navigationCollection[navigationCollection.Count - 1]
-                                    : Application.Current?.MainPage;
-                            OnNavigatedTo(CurrentPage, t.Source);
-                            return;
-                        }
+                        await FixedGoBack(t);
                     }
                     if (
                         Pages is not null
@@ -488,8 +513,14 @@ namespace StatelessForMAUI.StateMachine
                             OnNavigatedTo(page, t.Source);
                             return;
                         }
-                        var navigation = AppLifeStateMachine.Navigation ?? SetEmptyRootPage();
-                        await navigation.PushModalAsync(page);
+                        if (attribute?.isModal ?? false)
+                        {
+                            await EnsureNavigationPageIsSet().PushModalAsync(page);
+                        }
+                        else
+                        {
+                            await EnsureNavigationPageIsSet().PushAsync(page);
+                        }
                         OnNavigatedTo(page, t.Source);
                     });
                 }
@@ -502,6 +533,11 @@ namespace StatelessForMAUI.StateMachine
                     IsInTransition = false;
                 }
             });
+        }
+
+        private static INavigation EnsureNavigationPageIsSet()
+        {
+            return AppLifeStateMachine.Navigation ?? SetEmptyRootPage();
         }
 
         private static async Task PushRootPage(Page page)

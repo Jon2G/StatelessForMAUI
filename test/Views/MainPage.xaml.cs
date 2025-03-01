@@ -16,7 +16,7 @@ public partial class MainPage : ContentPage
 
     private void Button_Clicked(object sender, EventArgs e)
     {
-        NavigationStateMachine.GoTo<DrawingPage>();
+        NavigationStateMachine.GoTo<DrawingPage,DrawingViewModel>();
     }
 
     private void Button_Clicked_1(object sender, EventArgs e)

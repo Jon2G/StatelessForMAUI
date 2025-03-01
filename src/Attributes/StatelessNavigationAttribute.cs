@@ -19,6 +19,8 @@ namespace StatelessForMAUI.Attributes
         internal readonly bool permitReentry = false;
         internal readonly bool selfIgnore = true;
         internal readonly bool isRoot = false;
+        internal readonly bool isModal = false;
+
         public StatelessNavigationAttribute(
 
             Type[]? allowedTransitions = null,
@@ -29,7 +31,8 @@ namespace StatelessForMAUI.Attributes
            Type? onConnectedToInternet = null,
            bool permitReentry = false,
             bool selfIgnore = true,
-            bool isRoot = false
+            bool isRoot = false,
+            bool isModal = false
             )
         {
             this.allowedTransitions = allowedTransitions;
@@ -41,6 +44,7 @@ namespace StatelessForMAUI.Attributes
             this.permitReentry = permitReentry;
             this.selfIgnore = selfIgnore;
             this.isRoot = isRoot;
+            this.isModal=isModal;
         }
 
 
