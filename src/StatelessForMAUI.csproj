@@ -48,6 +48,14 @@
 			<BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
 		</PropertyGroup>
 	</Target>
+
+	<ItemGroup>
+	  <Compile Remove="Handlers\**" />
+	  <EmbeddedResource Remove="Handlers\**" />
+	  <MauiCss Remove="Handlers\**" />
+	  <MauiXaml Remove="Handlers\**" />
+	  <None Remove="Handlers\**" />
+	</ItemGroup>
 	<!--<ItemGroup Condition="$(TargetFramework.Contains('net8.0'))">
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />

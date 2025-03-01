@@ -6,7 +6,7 @@ using StatelessForMAUI.Attributes;
 using StatelessForMAUI.StateMachine;
 
 namespace SampleApp.Views;
-[StatelessNavigation(GoBackTarget: typeof(MainPage), permitReentry: true)]
+[StatelessNavigation(GoBackTarget: typeof(MainPage), permitReentry: true, canGoBack: true)]
 public partial class DrawingPage : ContentPage
 {
     public DrawingViewModel ViewModel => BindingContext as DrawingViewModel;

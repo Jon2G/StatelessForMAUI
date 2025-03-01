@@ -1,41 +1,59 @@
 ﻿using StatelessForMAUI.StateMachine;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StatelessForMAUI.Pages
 {
-    internal class StatelessNavigationPage : Shell
+    internal class StatelessNavigationPage : NavigationPage, IAppLifeStatePage, IConectivityStatePage, INavigationEventsPage
     {
-        public StatelessNavigationPage(Page root) : base()
+        internal StatelessNavigationPage(Page page) : base(page)
         {
             Shell.SetBackButtonBehavior(this, new BackButtonBehavior()
             {
                 Command = new Command(OnNavBarBackButtonPressed)
             });
-            this.CurrentItem = new ShellContent()
-            {
-                Title = "Root",
-                Route = "root",
-                ContentTemplate = new DataTemplate(() => root)
-            };
         }
-
         private void OnNavBarBackButtonPressed(object obj)
         {
-            NavigationStateMachine.GoBack();
+            throw new NotImplementedException();
         }
 
-
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-        }
         protected override bool OnBackButtonPressed()
         {
+            NavigationStateMachine.GoBack();
             return true;
+        }
+        public virtual void OnBackground()
+        {
+
+        }
+
+        public virtual void OnResume()
+        {
+
+        }
+
+        public virtual void OnConnectivityOff()
+        {
+
+        }
+
+        public virtual void OnConnectivityOn()
+        {
+
+        }
+
+        public virtual void OnConnectivityError()
+        {
+
+        }
+
+        public virtual void OnNavigatedAway(string? to)
+        {
+
+        }
+
+        public virtual void OnNavigatedTo(string? from)
+        {
+
         }
     }
 }

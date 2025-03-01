@@ -11,10 +11,17 @@ namespace StatelessForMAUI.Pages
     internal static class PageStateNameGenerator
     {
         public static string GetPageStateName<T>() => GetPageStateName(typeof(T));
-        public static string GetPageStateName(this Page page) => GetPageStateName(page.GetType());
+        public static string GetPageStateName(this Page page)
+        {
+            if (page is StatelessNavigationPage navigationPage)
+            {
+                return navigationPage.CurrentPage.GetPageStateName();
+            }
+            return GetPageStateName(page.GetType());
+        }
         public static string GetPageTrigger(Type type)
         {
-           return GetPageTrigger(GetPageStateName(type));
+            return GetPageTrigger(GetPageStateName(type));
         }
         public static string GetPageTrigger(string name)
         {
