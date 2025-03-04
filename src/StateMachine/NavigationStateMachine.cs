@@ -22,7 +22,7 @@ namespace StatelessForMAUI.StateMachine
             statelessNavigationAttribute;
         public readonly Type Type = type;
 
-        internal Task<StatelessNavigationPage> GetPage() => NavigationStateMachine.ActivatePage(this.Type);
+        internal Task<StatelessNavigationPage> GetPage(Dictionary<string, object>? pageParams) => NavigationStateMachine.ActivatePage(this.Type, pageParams);
 
         internal void BuildState(
             StateMachine<string, string> stateMachine,
@@ -141,7 +141,7 @@ namespace StatelessForMAUI.StateMachine
         public override StateMachine<string, string> StateMachine { get; protected set; }
 
         public static Page? CurrentPage { get; internal set; } = null;
-        private ReadOnlyDictionary<string, Func<Task<StatelessNavigationPage>>>? Pages;
+        private ReadOnlyDictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>? Pages;
         private readonly bool HapticFeedBack;
 
         public NavigationStateMachine(Type? splashPageType, bool hapticFeedBack)
@@ -165,7 +165,7 @@ namespace StatelessForMAUI.StateMachine
             );
             this.BuildStateMachine(Container.GetRequired<ConnectivityStateMachine>());
         }
-        internal static async Task<StatelessNavigationPage> ActivatePage(Type? type)
+        internal static async Task<StatelessNavigationPage> ActivatePage(Type? type, Dictionary<string, object>? pageParams = null)
         {
             if (type == null)
             {
@@ -181,13 +181,21 @@ namespace StatelessForMAUI.StateMachine
             }
             return await MainThread.InvokeOnMainThreadAsync(() =>
             {
-                var page = ((ContentPage)Activator.CreateInstance(type)!);
+                ContentPage? page;
+                if (pageParams is not null)
+                {
+                    page = ((ContentPage)Activator.CreateInstance(type, args: (object[])pageParams.Values.ToArray())!);
+                }
+                else
+                {
+                    page = ((ContentPage)Activator.CreateInstance(type)!);
+                }
                 return new StatelessNavigationPage(page);
             });
         }
         private void BuildStateMachine(ConnectivityStateMachine? connectivityStateMachine = null)
         {
-            var pagesDictionary = new Dictionary<string, Func<Task<StatelessNavigationPage>>>();
+            var pagesDictionary = new Dictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>();
             foreach (
                 Type type in AppDomain
                     .CurrentDomain.GetAssemblies()
@@ -208,11 +216,11 @@ namespace StatelessForMAUI.StateMachine
                         attribute,
                         type
                     );
-                    pagesDictionary.Add(name, () => navigationItem.GetPage());
+                    pagesDictionary.Add(name, (Dictionary<string, object>? pageParams) => navigationItem.GetPage(pageParams));
                     navigationItem.BuildState(this.StateMachine, connectivityStateMachine);
                 }
             }
-            Pages = new ReadOnlyDictionary<string, Func<Task<StatelessNavigationPage>>>(pagesDictionary);
+            Pages = new ReadOnlyDictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>(pagesDictionary);
             Init();
         }
 
@@ -241,7 +249,7 @@ namespace StatelessForMAUI.StateMachine
             }
             if (navigationCollection.Count > 0)
             {
-                return navigationCollection[navigationCollection.Count - 1];
+                return navigationCollection[^1];
             }
             else if (Application.Current?.MainPage is NavigationPage nav)
             {
@@ -263,15 +271,10 @@ namespace StatelessForMAUI.StateMachine
 
         internal static async Task PopPageFixed(Func<Task<Page?>> PopAction, INavigation navigation, StateMachine<string, string>.Transition t)
         {
-            var away = await navigation.PopModalAsync();
+            Page? away = await PopAction();
+            CurrentPage = GetCurrentPage(navigation);
             OnNavigatedAway(away, t.Destination);
-            var navigationCollection = navigation.ModalStack;
-            CurrentPage =
-                navigationCollection.Count > 0
-                    ? navigationCollection[^1]
-                    : Application.Current?.MainPage;
             OnNavigatedTo(CurrentPage, t.Source);
-            return;
         }
 
         internal static async Task FixedGoBack(StateMachine<string, string>.Transition transition)
@@ -317,10 +320,19 @@ namespace StatelessForMAUI.StateMachine
             }
             return backPageName;
         }
+        public static Task<NavigationStateMachine> GoToAsync(string TriggerName, Dictionary<string, object> pageParams)
+        {
+            return FireAsync(TriggerName, pageParams: pageParams);
+        }
         public static Task<NavigationStateMachine> GoToAsync<T>()
             where T : Page
         {
             return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)));
+        }
+        public static Task<NavigationStateMachine> GoToAsync<T>(Dictionary<string, object> pageParams)
+            where T : Page
+        {
+            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), pageParams: pageParams);
         }
         public static Task<NavigationStateMachine> GoToAsync<T, V>()
             where T : Page
@@ -350,7 +362,7 @@ namespace StatelessForMAUI.StateMachine
             return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)), param);
         }
 
-        public static NavigationStateMachine Fire(string trigger, object? param = null)
+        internal static NavigationStateMachine Fire(string trigger, object? param = null)
         {
             if (AppLifeStateMachine.IsDebug)
             {
@@ -360,14 +372,17 @@ namespace StatelessForMAUI.StateMachine
             instance.StateMachine.FireAsync(trigger, param).SafeFireAndForget();
             return instance;
         }
-
-        public static Task<NavigationStateMachine> FireAsync(string trigger, object? param = null)
+        internal static Task<NavigationStateMachine> FireAsync(string trigger, object? param = null, Dictionary<string, object>? pageParams = null)
         {
             var instance = NavigationStateMachine.Instance;
+            if (pageParams is not null)
+            {
+                return instance.StateMachine.FireAsync(trigger, [param, pageParams]).ContinueWith(t => instance);
+            }
             return instance.StateMachine.FireAsync(trigger, param).ContinueWith(t => instance);
         }
 
-        public static bool FireIfYouCan(string trigger, object? param = null)
+        internal static bool FireIfYouCan(string trigger, object? param = null)
         {
             if (Instance.StateMachine.CanFire(trigger))
             {
@@ -417,11 +432,11 @@ namespace StatelessForMAUI.StateMachine
             OnNavigatedTo(to, from.GetPageStateName());
         }
 
-        private static Task<StatelessNavigationPage> BuildPage(Func<Task<StatelessNavigationPage>> func)
+        private static Task<StatelessNavigationPage> BuildPage(Func<Dictionary<string, object>?, Task<StatelessNavigationPage>> func, Dictionary<string, object>? pageParams)
         {
             try
             {
-                return MainThread.InvokeOnMainThreadAsync(func);
+                return MainThread.InvokeOnMainThreadAsync(() => func(pageParams));
             }
             catch (Exception ex)
             {
@@ -484,10 +499,10 @@ namespace StatelessForMAUI.StateMachine
                     }
                     if (
                         Pages is not null
-                        && Pages.TryGetValue(t.Destination, out Func<Task<StatelessNavigationPage>>? value)
+                        && Pages.TryGetValue(t.Destination, out Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>? value)
                     )
                     {
-                        statelessNavigationPage = await BuildPage(value);
+                        statelessNavigationPage = await BuildPage(value, t.Parameters.Length == 2 ? t.Parameters[1] as Dictionary<string, object?> : null);
                         page = statelessNavigationPage?.CurrentPage;
                     }
                     if (statelessNavigationPage is null || page is null)

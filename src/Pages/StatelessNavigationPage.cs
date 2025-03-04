@@ -23,37 +23,58 @@ namespace StatelessForMAUI.Pages
         }
         public virtual void OnBackground()
         {
-
+            if(CurrentPage is IAppLifeStatePage page)
+            {
+                page.OnBackground();
+            }
         }
 
         public virtual void OnResume()
         {
-
+            if(CurrentPage is IAppLifeStatePage page)
+            {
+                page.OnResume();
+            }
         }
 
         public virtual void OnConnectivityOff()
         {
-
+            if(CurrentPage is IConectivityStatePage page)
+            {
+                page.OnConnectivityOff();
+            }
         }
 
         public virtual void OnConnectivityOn()
         {
-
+            if(CurrentPage is IConectivityStatePage page)
+            {
+                page.OnConnectivityOn();
+            }
         }
 
         public virtual void OnConnectivityError()
         {
-
+            if(CurrentPage is IConectivityStatePage page)
+            {
+                page.OnConnectivityError();
+            }
         }
 
         public virtual void OnNavigatedAway(string? to)
         {
-
+            if(CurrentPage is INavigationEventsPage page)
+            {
+                page.OnNavigatedAway(to);
+            }
         }
 
         public virtual void OnNavigatedTo(string? from)
         {
-
+            if(CurrentPage is INavigationEventsPage page)
+            {
+                page.OnNavigatedTo(from);
+            }
         }
     }
 }

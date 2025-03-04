@@ -8,7 +8,7 @@ using StatelessForMAUI.Attributes;
 
 namespace StatelessForMAUI.Pages
 {
-    internal static class PageStateNameGenerator
+    public static class PageStateNameGenerator
     {
         public static string GetPageStateName<T>() => GetPageStateName(typeof(T));
         public static string GetPageStateName(this Page page)
