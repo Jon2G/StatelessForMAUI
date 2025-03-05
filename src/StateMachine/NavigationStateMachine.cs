@@ -491,11 +491,11 @@ namespace StatelessForMAUI.StateMachine
                     if (t.Trigger == GO_BACK)
                     {
                         EnsureNavigationPageIsSet();
+                        await FixedGoBack(t);
                         if (t.Destination == CurrentPage?.GetPageStateName())
                         {
                             return;
                         }
-                        await FixedGoBack(t);
                     }
                     if (
                         Pages is not null
