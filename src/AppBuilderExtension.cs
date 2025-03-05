@@ -65,7 +65,7 @@ namespace StatelessForMAUI
                 KeyBoardUtils.ForceCloseKeyboard();
                 return true;
             }
-            NavigationStateMachine.GoBack();
+            //NavigationStateMachine.GoBack();
             return true;
         }
 
