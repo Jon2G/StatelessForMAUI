@@ -8,46 +8,29 @@ using System.Threading.Tasks;
 namespace StatelessForMAUI.Attributes
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public class StatelessNavigationAttribute : Attribute
+    public class StatelessNavigationAttribute(
+
+        Type[]? allowedTransitions = null,
+          Type[]? ignoredTransitions = null,
+        bool canGoBack = true,
+        Type? GoBackTarget = null,
+        bool useNetworkTriggers = true,
+       Type? onConnectedToInternet = null,
+       bool permitReentry = false,
+        bool selfIgnore = true,
+        bool isRoot = false,
+        bool isModal = false
+            ) : Attribute
     {
-        internal readonly Type[]? allowedTransitions = null;
-        internal readonly Type[]? ignoredTransitions = null;
-        internal readonly bool canGoBack;
-        internal readonly Type? goBackTarget = null;
-        internal readonly bool useNetworkTriggers;
-        internal readonly Type? onConnectedToInternet = null;
-        internal readonly bool permitReentry = false;
-        internal readonly bool selfIgnore = true;
-        internal readonly bool isRoot = false;
-        internal readonly bool isModal = false;
-
-        public StatelessNavigationAttribute(
-
-            Type[]? allowedTransitions = null,
-              Type[]? ignoredTransitions = null,
-            bool canGoBack = true,
-            Type? GoBackTarget = null,
-            bool useNetworkTriggers = true,
-           Type? onConnectedToInternet = null,
-           bool permitReentry = false,
-            bool selfIgnore = true,
-            bool isRoot = false,
-            bool isModal = false
-            )
-        {
-            this.allowedTransitions = allowedTransitions;
-            this.ignoredTransitions = ignoredTransitions;
-            this.canGoBack = canGoBack;
-            this.goBackTarget = GoBackTarget;
-            this.useNetworkTriggers = useNetworkTriggers;
-            this.onConnectedToInternet = onConnectedToInternet;
-            this.permitReentry = permitReentry;
-            this.selfIgnore = selfIgnore;
-            this.isRoot = isRoot;
-            this.isModal=isModal;
-        }
-
-
-
+        internal readonly Type[]? allowedTransitions = allowedTransitions;
+        internal readonly Type[]? ignoredTransitions = ignoredTransitions;
+        internal readonly bool canGoBack = canGoBack;
+        internal readonly Type? goBackTarget = GoBackTarget;
+        internal readonly bool useNetworkTriggers = useNetworkTriggers;
+        internal readonly Type? onConnectedToInternet = onConnectedToInternet;
+        internal readonly bool permitReentry = permitReentry;
+        internal readonly bool selfIgnore = selfIgnore;
+        internal readonly bool isRoot = isRoot;
+        internal readonly bool isModal = isModal;
     }
 }

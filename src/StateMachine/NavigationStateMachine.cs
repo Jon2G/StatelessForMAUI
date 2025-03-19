@@ -564,7 +564,7 @@ namespace StatelessForMAUI.StateMachine
         {
             await Task.Yield();
             bool popToRoot = false;
-            if (Application.Current!.MainPage!.GetType() == page.GetType())
+            if (Application.Current!.MainPage is StatelessNavigationPage currentPage && currentPage.GetType() == page.CurrentPage.GetType())
             {
                 popToRoot = true;
             }

@@ -1,6 +1,9 @@
 ﻿
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using KeyboardVisibilityListener;
 using Microsoft.Maui.LifecycleEvents;
+using StatelessForMAUI.Attributes;
 using StatelessForMAUI.StateMachine;
 using StatelessForMAUI.StateMachine.Triggers;
 using TinyTypeContainer;
@@ -14,10 +17,10 @@ namespace StatelessForMAUI
         {
             try
             {
-                var splashPage = await NavigationStateMachine.ActivatePage(splashPageType);
+                var splashPage = await NavigationStateMachine.ActivatePage(type:splashPageType,pageParams:null);
                 NavigationStateMachine.CurrentPage = splashPage;
-                NavigationPage.SetHasNavigationBar(splashPage, false);
-                Application.Current!.MainPage = new NavigationPage(splashPage);
+                NavigationPage.SetHasNavigationBar(splashPage.CurrentPage, false);
+                Application.Current!.MainPage = splashPage;
                 AppLifeStateMachine.Navigation = Application.Current.MainPage.Navigation;
                 AppLifeStateMachine.RootPage = Application.Current.MainPage;
                 NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
@@ -69,6 +72,7 @@ namespace StatelessForMAUI
             return true;
         }
 
+
         public static MauiAppBuilder UseStatelessForMaui(this MauiAppBuilder builder,
             Type? splashPageType = null,
             Type? onDisconnectedFromInternet = null,
@@ -76,21 +80,15 @@ namespace StatelessForMAUI
             bool HapticFeedBackOnPageChange = false,
             bool debug = false)
         {
+
+            splashPageType ??= FindSplashPageTypeByAttribute(Assembly.GetCallingAssembly());
             builder
     .ConfigureLifecycleEvents(events =>
     {
 #if ANDROID
         events.AddAndroid(android => android
         //.OnActivityResult((activity, requestCode, resultCode, data) => LogEvent(nameof(AndroidLifecycle.OnActivityResult), requestCode.ToString()))
-        .OnCreate((activity, bundle) =>
-        {
-            OnCreate(
-                       splashPageType: splashPageType,
-                       onNetworkError: onNetworkError,
-                       onDisconnectedFromInternet: onDisconnectedFromInternet,
-                       debug: debug,
-                       HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
-        })
+        .OnCreate((activity, bundle) =>_OnCreate())
         .OnStart((activity) => OnStart(splashPageType: splashPageType))
         .OnBackPressed((activity) => OnBackPressed())
             //.OnStop((activity) => AppLifeStateMachine.Fire(AppLifeTrigger.))
@@ -104,12 +102,7 @@ namespace StatelessForMAUI
         events.AddiOS(ios => ios
             .OnActivated((app) =>
                 {
-                    OnCreate(
-                        splashPageType: splashPageType,
-                        onNetworkError: onNetworkError,
-                        onDisconnectedFromInternet: onDisconnectedFromInternet,
-                        debug: debug,
-                        HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
+                   _OnCreate();
                     OnStart(splashPageType: splashPageType);
                 }
                 )
@@ -138,13 +131,7 @@ namespace StatelessForMAUI
                .OnActivated((window, args) => OnStart(splashPageType: splashPageType))
                //.OnClosed((window, args) => LogEvent(nameof(WindowsLifecycle.OnClosed)))
                //.OnLaunched((window, args) => LogEvent(nameof(WindowsLifecycle.OnLaunched)))
-               .OnLaunching((window, args) =>
-               OnCreate(
-                   splashPageType: splashPageType,
-                   onNetworkError: onNetworkError,
-                   onDisconnectedFromInternet: onDisconnectedFromInternet,
-                   debug: debug,
-                   HapticFeedBackOnPageChange: HapticFeedBackOnPageChange))
+               .OnLaunching((window, args) =>_OnCreate())
                .OnVisibilityChanged((window, args) =>
                {
                    if (window.Visible)
@@ -171,7 +158,33 @@ namespace StatelessForMAUI
         }
 
     });
+            
+            
+            void _OnCreate()
+            {
+               
+                OnCreate(
+                    splashPageType: splashPageType,
+                    onNetworkError: onNetworkError,
+                    onDisconnectedFromInternet: onDisconnectedFromInternet,
+                    debug: debug,
+                    HapticFeedBackOnPageChange: HapticFeedBackOnPageChange);
+            }
             return builder;
+        }
+
+        private static Type? FindSplashPageTypeByAttribute(Assembly assembly)
+        {
+            var types = assembly.GetTypes();
+            foreach (var type in types)
+            {
+                var attributes = type.GetCustomAttributes(typeof(SplashPageAttribute), true);
+                if (attributes.Length > 0)
+                {
+                    return type;
+                }
+            }
+            return null;
         }
     }
 }
