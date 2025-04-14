@@ -14,6 +14,11 @@ namespace StatelessForMAUI.Pages
 
         }
 
+        protected override bool OnBackButtonPressed()
+        {
+            return base.OnBackButtonPressed();
+        }
+
         public virtual void OnBackground()
         {
 

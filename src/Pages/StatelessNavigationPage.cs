@@ -1,4 +1,5 @@
-﻿using StatelessForMAUI.StateMachine;
+﻿using System.Reflection;
+using StatelessForMAUI.StateMachine;
 
 namespace StatelessForMAUI.Pages
 {
@@ -6,7 +7,21 @@ namespace StatelessForMAUI.Pages
     {
         internal StatelessNavigationPage(Page page) : base(page)
         {
+            //Copy all bindale properties 
+            //TODO: Copy only relevant props
+            foreach (PropertyInfo propertyInfo in page.GetType().GetProperties(BindingFlags.Public))
+            {
+                Console.WriteLine($"Property {propertyInfo.Name} copied");
+                propertyInfo.SetValue(this,propertyInfo.GetValue(page));
+            }
+            NavigationPage.SetHasNavigationBar(page,false);
+            
+            
             Shell.SetBackButtonBehavior(this, new BackButtonBehavior()
+            {
+                Command = new Command(OnNavBarBackButtonPressed)
+            });
+            Shell.SetBackButtonBehavior(page, new BackButtonBehavior()
             {
                 Command = new Command(OnNavBarBackButtonPressed)
             });
