@@ -8,7 +8,7 @@ namespace StatelessForMAUI.Pages
 {
     public interface INavigationEventsPage
     {
-       void OnNavigatedAway(string? to);
-        void OnNavigatedTo(string? from);
+       void OnNavigatedAway(Page? to);
+        void OnNavigatedTo(Page? from);
     }
 }

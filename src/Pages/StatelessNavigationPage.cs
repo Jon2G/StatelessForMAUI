@@ -3,18 +3,33 @@ using StatelessForMAUI.StateMachine;
 
 namespace StatelessForMAUI.Pages
 {
+    internal static class StatelessNavigationPageExtensions
+    {
+        internal static Page? UnBoxStatelessNavigationPage(this Page? from)
+        {
+            if(from is StatelessNavigationPage navigationPage)
+            {
+                return navigationPage.UnBoxStatelessNavigationPage();
+            }
+            return from;
+        }
+        internal static Page? UnBoxStatelessNavigationPage(this StatelessNavigationPage? from)
+        {
+            return from?.CurrentPage;
+        }
+    }
     internal class StatelessNavigationPage : NavigationPage, IAppLifeStatePage, IConectivityStatePage, INavigationEventsPage
     {
         internal StatelessNavigationPage(Page page) : base(page)
         {
             //Copy all bindale properties 
             //TODO: Copy only relevant props
-            foreach (PropertyInfo propertyInfo in page.GetType().GetProperties(BindingFlags.Public))
+            foreach (PropertyInfo propertyInfo in typeof(NavigationPage).GetProperties(BindingFlags.Static))
             {
                 Console.WriteLine($"Property {propertyInfo.Name} copied");
                 propertyInfo.SetValue(this,propertyInfo.GetValue(page));
             }
-            NavigationPage.SetHasNavigationBar(page,false);
+            //NavigationPage.SetHasNavigationBar(page,false);
             
             
             Shell.SetBackButtonBehavior(this, new BackButtonBehavior()
@@ -76,19 +91,21 @@ namespace StatelessForMAUI.Pages
             }
         }
 
-        public virtual void OnNavigatedAway(string? to)
+    
+
+        public virtual void OnNavigatedAway(Page? to)
         {
             if(CurrentPage is INavigationEventsPage page)
             {
-                page.OnNavigatedAway(to);
+                page.OnNavigatedAway(to?.UnBoxStatelessNavigationPage());
             }
         }
 
-        public virtual void OnNavigatedTo(string? from)
+        public virtual void OnNavigatedTo(Page? from)
         {
             if(CurrentPage is INavigationEventsPage page)
             {
-                page.OnNavigatedTo(from);
+                page.OnNavigatedTo(from?.UnBoxStatelessNavigationPage());
             }
         }
     }

@@ -9,6 +9,21 @@ using TinyTypeContainer;
 
 namespace StatelessForMAUI.StateMachine
 {
+    internal class NavigationEvent
+    {
+        public readonly string? Trigger;
+        public Page? Source;
+        public readonly Type Destination;
+        public readonly object[] Parameters;
+        public NavigationEvent(string? trigger, Page? source, Type destination, params object[] parameters)
+        {
+            Trigger = trigger;
+            Source = source;
+            Destination = destination;
+            Parameters = parameters;
+        }
+    }
+
     internal class NavigationStateItem(
         string name,
         string triggerName,
@@ -131,39 +146,22 @@ namespace StatelessForMAUI.StateMachine
         }
     }
 
-    public class NavigationStateMachine : StateMachineBase<string, string>
+    public class NavigationStateMachine
     {
         public const string GO_BACK = "GoBack";
         public static NavigationStateMachine Instance
         {
             get => Container.GetRequired<NavigationStateMachine>();
         }
-        public override StateMachine<string, string> StateMachine { get; protected set; }
+
 
         public static Page? CurrentPage { get; internal set; } = null;
-        private ReadOnlyDictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>? Pages;
+
         private readonly bool HapticFeedBack;
 
         public NavigationStateMachine(Type? splashPageType, bool hapticFeedBack)
         {
             this.HapticFeedBack = hapticFeedBack;
-            this.StateMachine = new StateMachine<string, string>(
-                PageStateNameGenerator.GetPageStateName(splashPageType)
-            );
-            this.StateMachine.OnUnhandledTrigger(
-                (state, trigger) =>
-                {
-                    if (AppLifeStateMachine.IsDebug)
-                    {
-                        Console.WriteLine($"Unhandled trigger {trigger} in state {state}");
-                    }
-                    if (this.StateMachine.CanFire(GO_BACK))
-                    {
-                        Fire(GO_BACK);
-                    }
-                }
-            );
-            this.BuildStateMachine(Container.GetRequired<ConnectivityStateMachine>());
         }
         internal static async Task<StatelessNavigationPage> ActivatePage(Type? type, Dictionary<string, object>? pageParams = null)
         {
@@ -192,36 +190,6 @@ namespace StatelessForMAUI.StateMachine
                 }
                 return new StatelessNavigationPage(page);
             });
-        }
-        private void BuildStateMachine(ConnectivityStateMachine? connectivityStateMachine = null)
-        {
-            var pagesDictionary = new Dictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>();
-            foreach (
-                Type type in AppDomain
-                    .CurrentDomain.GetAssemblies()
-                    .Where(a => !a.IsDynamic)
-                    .SelectMany(a =>
-                        a.GetTypes().Where(x => !x.IsAbstract && x.IsSubclassOf(typeof(Page)))
-                    )
-            )
-            {
-                var attribute = type.GetCustomAttribute<StatelessNavigationAttribute>(false);
-                if (attribute is not null)
-                {
-                    string name = PageStateNameGenerator.GetPageStateName(type);
-                    string triggerName = PageStateNameGenerator.GetPageTrigger(type);
-                    var navigationItem = new NavigationStateItem(
-                        name,
-                        triggerName,
-                        attribute,
-                        type
-                    );
-                    pagesDictionary.Add(name, (Dictionary<string, object>? pageParams) => navigationItem.GetPage(pageParams));
-                    navigationItem.BuildState(this.StateMachine, connectivityStateMachine);
-                }
-            }
-            Pages = new ReadOnlyDictionary<string, Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>>(pagesDictionary);
-            Init();
         }
 
         private static INavigation SetEmptyRootPage()
@@ -269,15 +237,15 @@ namespace StatelessForMAUI.StateMachine
             return CurrentPage!.GetPageStateName();
         }
 
-        internal static async Task PopPageFixed(Func<Task<Page?>> PopAction, INavigation navigation, StateMachine<string, string>.Transition t)
+        internal static async Task PopPageFixed(Func<Task<Page?>> PopAction, INavigation navigation, NavigationEvent t)
         {
             Page? away = await PopAction();
             CurrentPage = GetCurrentPage(navigation);
-            OnNavigatedAway(away, t.Destination);
-            OnNavigatedTo(CurrentPage, t.Source);
+            OnNavigatedAway(away, CurrentPage);
+            OnNavigatedTo(CurrentPage, away);
         }
 
-        internal static async Task FixedGoBack(StateMachine<string, string>.Transition transition)
+        internal static async Task FixedGoBack(NavigationEvent transition)
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
@@ -320,123 +288,72 @@ namespace StatelessForMAUI.StateMachine
             }
             return backPageName;
         }
-        public static Task<NavigationStateMachine> GoToAsync(string TriggerName, Dictionary<string, object> pageParams)
-        {
-            return FireAsync(TriggerName, pageParams: pageParams);
-        }
-        public static Task<NavigationStateMachine> GoToAsync<T>()
-            where T : Page
-        {
-            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)));
-        }
-        public static Task<NavigationStateMachine> GoToAsync<T>(Dictionary<string, object> pageParams)
-            where T : Page
-        {
-            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), pageParams: pageParams);
-        }
+        public static Task<NavigationStateMachine> GoToAsync<T>() where T : Page => FireAsync(trigger: null, destination: typeof(T), param: null);
+
         public static Task<NavigationStateMachine> GoToAsync<T, V>()
             where T : Page
             where V : new()
         {
-            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), new V());
+            return Instance.PerformNavigation(destination: typeof(T), trigger: null, args: new V()).ContinueWith(t => Instance);
         }
         public static Task<NavigationStateMachine> GoToAsync<T, V>(V? param)
             where T : Page
         {
-            return FireAsync(PageStateNameGenerator.GetPageTrigger(typeof(T)), param);
-        }
-        public static NavigationStateMachine GoTo<T>()
-            where T : Page
-        {
-            return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)));
-        }
-        public static NavigationStateMachine GoTo<T, V>()
-            where T : Page
-            where V : new()
-        {
-            return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)), new V());
-        }
-        public static NavigationStateMachine GoTo<T, V>(V? param)
-            where T : Page
-        {
-            return Fire(PageStateNameGenerator.GetPageTrigger(typeof(T)), param);
+            return Instance.PerformNavigation(destination: typeof(T), trigger: null, args: param).ContinueWith(t => Instance);
         }
 
-        internal static NavigationStateMachine Fire(string trigger, object? param = null)
+        internal static NavigationStateMachine Fire(string? trigger = null, Type? destination = null, object? param = null)
         {
             if (AppLifeStateMachine.IsDebug)
             {
                 Console.WriteLine("Fire: " + trigger);
             }
             var instance = NavigationStateMachine.Instance;
-            instance.StateMachine.FireAsync(trigger, param).SafeFireAndForget();
+            instance.PerformNavigation(trigger: trigger, destination: destination, args: [param]).SafeFireAndForget();
             return instance;
         }
-        internal static Task<NavigationStateMachine> FireAsync(string trigger, object? param = null, Dictionary<string, object>? pageParams = null)
+        internal static Task<NavigationStateMachine> FireAsync(string? trigger = null, Type? destination = null, object? param = null)
         {
             var instance = NavigationStateMachine.Instance;
-            if (pageParams is not null)
-            {
-                return instance.StateMachine.FireAsync(trigger, [param, pageParams]).ContinueWith(t => instance);
-            }
-            return instance.StateMachine.FireAsync(trigger, param).ContinueWith(t => instance);
-        }
-
-        internal static bool FireIfYouCan(string trigger, object? param = null)
-        {
-            if (Instance.StateMachine.CanFire(trigger))
-            {
-                Fire(trigger, param);
-                return true;
-            }
-            return false;
+            return instance.PerformNavigation(trigger: trigger, destination: destination, args: [param]).ContinueWith(t => instance);
         }
 
         public static bool CanGoBack()
         {
-            return Instance.StateMachine.CanFire(GO_BACK);
+            throw new NotImplementedException("CanGoBack is not implemented");
         }
 
         public static void GoBack()
         {
-            Application.Current?.Dispatcher.DispatchAsync(() => Fire(GO_BACK)).SafeFireAndForget();
+            Application.Current?.Dispatcher.DispatchAsync(() => Fire(trigger: GO_BACK)).SafeFireAndForget();
         }
         public static async Task GoBackAsync()
         {
-            await Application.Current?.Dispatcher.DispatchAsync(() => Fire(GO_BACK));
-        }
-
-        internal static void OnNavigatedAway(Page? away, string? to)
-        {
-            if (away is INavigationEventsPage awayPage)
-            {
-                awayPage.OnNavigatedAway(to);
-            }
+            await Application.Current?.Dispatcher.DispatchAsync(() => Fire(trigger: GO_BACK));
         }
 
         internal static void OnNavigatedAway(Page? away, Page? to)
         {
-            OnNavigatedAway(away, to?.GetPageStateName());
-        }
-
-        internal static void OnNavigatedTo(Page? to, string? from)
-        {
-            if (to is INavigationEventsPage toPage)
+            if (away is INavigationEventsPage awayPage)
             {
-                toPage.OnNavigatedTo(from ?? string.Empty);
+                awayPage.OnNavigatedAway(to?.UnBoxStatelessNavigationPage());
             }
         }
 
-        internal static void OnNavigatedTo(Page? to, Page from)
+        internal static void OnNavigatedTo(Page? to, Page? from)
         {
-            OnNavigatedTo(to, from.GetPageStateName());
+            if (to is INavigationEventsPage toPage)
+            {
+                toPage.OnNavigatedTo(from?.UnBoxStatelessNavigationPage());
+            }
         }
 
-        private static Task<StatelessNavigationPage> BuildPage(Func<Dictionary<string, object>?, Task<StatelessNavigationPage>> func, Dictionary<string, object>? pageParams)
+
+        private static Task<StatelessNavigationPage> BuildPage(Type type, Dictionary<string, object>? pageParams)
         {
             try
             {
-                return MainThread.InvokeOnMainThreadAsync(() => func(pageParams));
+                return MainThread.InvokeOnMainThreadAsync(() => ActivatePage(type, pageParams));
             }
             catch (Exception ex)
             {
@@ -444,7 +361,7 @@ namespace StatelessForMAUI.StateMachine
                 {
                     Console.WriteLine(
                         "Failed to create an instance of page:"
-                            + func.GetType().GenericTypeArguments[0]
+                            + type.GenericTypeArguments[0]
                     );
                     Console.WriteLine(ex);
                 }
@@ -454,105 +371,107 @@ namespace StatelessForMAUI.StateMachine
 
         private bool IsInTransition;
 
-        private void Init()
+        private Task PerformNavigation(string? trigger, Type destination, params object[] args) =>
+            PerformNavigation(
+                new NavigationEvent(trigger: trigger, destination: destination,
+                    source: CurrentPage,
+                    parameters: args
+                )
+            );
+        private async Task PerformNavigation(NavigationEvent t)
         {
-            this.StateMachine.OnTransitionedAsync(async t =>
+            while (IsInTransition)
             {
-                while (IsInTransition)
+                await Task.Delay(100);
+            }
+            IsInTransition = true;
+            try
+            {
+                if (t.Source is null)
                 {
-                    await Task.Delay(100);
+                    t.Source = CurrentPage;
                 }
-                IsInTransition = true;
-                try
+                StatelessNavigationPage? statelessNavigationPage = null;
+                Page? page = null;
+                if (this.HapticFeedBack)
                 {
-                    StatelessNavigationPage? statelessNavigationPage = null;
-                    Page? page = null;
-                    if (this.HapticFeedBack)
-                    {
-                        MainThread
-                            .InvokeOnMainThreadAsync(
-                                () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
-                            )
-                            .SafeFireAndForget();
-                    }
-                    bool isShell = Shell.Current is not null;
+                    MainThread
+                        .InvokeOnMainThreadAsync(
+                            () => HapticFeedback.Default.Perform(HapticFeedbackType.Click)
+                        )
+                        .SafeFireAndForget();
+                }
+                bool isShell = Shell.Current is not null;
+                if (AppLifeStateMachine.IsDebug)
+                {
+                    Console.WriteLine(
+                        t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination
+                    );
+                }
+
+                if (isShell)
+                {
+                    Shell.Current!.FlyoutIsPresented = false;
+                }
+
+                if (t.Trigger == GO_BACK)
+                {
+                    EnsureNavigationPageIsSet();
+                    await FixedGoBack(t);
+                    return;
+                }
+                if (t.Destination is not null)
+                {
+                    statelessNavigationPage = await BuildPage(t.Destination, t.Parameters.Length == 2 ? t.Parameters[1] as Dictionary<string, object?> : null);
+                    page = statelessNavigationPage?.CurrentPage;
+                }
+                if (statelessNavigationPage is null || page is null)
+                {
                     if (AppLifeStateMachine.IsDebug)
                     {
-                        Console.WriteLine(
-                            t.Trigger + " <-> " + t.Source.ToString() + "->" + t.Destination
-                        );
+                        Console.WriteLine("page is null!", "Error");
                     }
-
-                    if (isShell)
+                    return;
+                }
+                if (t.Parameters.Length == 1 && t.Parameters[0] is not null)
+                {
+                    page.BindingContext = t.Parameters[0];
+                }
+                var attribute = page.GetType().GetCustomAttribute<StatelessNavigationAttribute>();
+                OnNavigatedAway(CurrentPage, page);
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    if (AppLifeStateMachine.IsDebug)
                     {
-                        Shell.Current!.FlyoutIsPresented = false;
+                        Console.WriteLine("Dispatched");
                     }
-
-                    if (t.Trigger == GO_BACK)
+                    CurrentPage = page;
+                    if (attribute?.isRoot ?? false)
                     {
-                        EnsureNavigationPageIsSet();
-                        await FixedGoBack(t);
-                        if (t.Destination == CurrentPage?.GetPageStateName())
-                        {
-                            return;
-                        }
-                    }
-                    if (
-                        Pages is not null
-                        && Pages.TryGetValue(t.Destination, out Func<Dictionary<string, object>?, Task<StatelessNavigationPage>>? value)
-                    )
-                    {
-                        statelessNavigationPage = await BuildPage(value, t.Parameters.Length == 2 ? t.Parameters[1] as Dictionary<string, object?> : null);
-                        page = statelessNavigationPage?.CurrentPage;
-                    }
-                    if (statelessNavigationPage is null || page is null)
-                    {
-                        if (AppLifeStateMachine.IsDebug)
-                        {
-                            Console.WriteLine("page is null!", "Error");
-                        }
+                        await PushRootPage(statelessNavigationPage);
+                        OnNavigatedTo(page, t.Source);
                         return;
                     }
-                    if (t.Parameters.Length == 1 && t.Parameters[0] is not null)
+                    if (attribute?.isModal ?? false)
                     {
-                        page.BindingContext = t.Parameters[0];
+                        await EnsureNavigationPageIsSet().PushModalAsync(statelessNavigationPage);
                     }
-                    var attribute = page.GetType()
-                        .GetCustomAttribute<StatelessNavigationAttribute>();
-                    OnNavigatedAway(CurrentPage, t.Destination);
-                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    else
                     {
-                        if (AppLifeStateMachine.IsDebug)
-                        {
-                            Console.WriteLine("Dispatched");
-                        }
-                        CurrentPage = page;
-                        if (attribute?.isRoot ?? false)
-                        {
-                            await PushRootPage(statelessNavigationPage);
-                            OnNavigatedTo(page, t.Source);
-                            return;
-                        }
-                        if (attribute?.isModal ?? false)
-                        {
-                            await EnsureNavigationPageIsSet().PushModalAsync(statelessNavigationPage);
-                        }
-                        else
-                        {
-                            await EnsureNavigationPageIsSet().PushAsync(statelessNavigationPage);
-                        }
-                        OnNavigatedTo(page, t.Source);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
-                finally
-                {
-                    IsInTransition = false;
-                }
-            });
+                        await EnsureNavigationPageIsSet().PushAsync(statelessNavigationPage);
+                    }
+                    OnNavigatedTo(page, t.Source);
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            finally
+            {
+                IsInTransition = false;
+            }
+
         }
 
         private static INavigation EnsureNavigationPageIsSet()

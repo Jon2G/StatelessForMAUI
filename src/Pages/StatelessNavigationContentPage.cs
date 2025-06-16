@@ -44,12 +44,12 @@ namespace StatelessForMAUI.Pages
 
         }
 
-        public virtual void OnNavigatedAway(string? to)
+        public virtual void OnNavigatedAway(Page? to)
         {
 
         }
 
-        public virtual void OnNavigatedTo(string? from)
+        public virtual void OnNavigatedTo(Page? from)
         {
 
         }

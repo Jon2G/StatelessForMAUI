@@ -17,13 +17,13 @@ namespace StatelessForMAUI
         {
             try
             {
-                var splashPage = await NavigationStateMachine.ActivatePage(type:splashPageType,pageParams:null);
+                var splashPage = await NavigationStateMachine.ActivatePage(type: splashPageType, pageParams: null);
                 NavigationStateMachine.CurrentPage = splashPage;
                 NavigationPage.SetHasNavigationBar(splashPage.CurrentPage, false);
                 Application.Current!.MainPage = splashPage;
                 AppLifeStateMachine.Navigation = Application.Current.MainPage.Navigation;
                 AppLifeStateMachine.RootPage = Application.Current.MainPage;
-                NavigationStateMachine.OnNavigatedTo(splashPage, string.Empty);
+                NavigationStateMachine.OnNavigatedTo(splashPage, null);
                 return Application.Current.MainPage;
             }
             catch (Exception ex)
@@ -102,7 +102,7 @@ namespace StatelessForMAUI
         events.AddiOS(ios => ios
             .OnActivated((app) =>
                 {
-                   _OnCreate();
+                    _OnCreate();
                     OnStart(splashPageType: splashPageType);
                 }
                 )
@@ -158,11 +158,11 @@ namespace StatelessForMAUI
         }
 
     });
-            
-            
+
+
             void _OnCreate()
             {
-               
+
                 OnCreate(
                     splashPageType: splashPageType,
                     onNetworkError: onNetworkError,

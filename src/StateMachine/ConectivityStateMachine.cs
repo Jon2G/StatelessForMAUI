@@ -122,13 +122,13 @@ namespace StatelessForMAUI.StateMachine
                 switch (t.Destination)
                 {
                     case ConectivityState.Off:
-                        NavigationStateMachine.FireIfYouCan(ON_DISCONECTED_FROM_INTERNET);
+                        NavigationStateMachine.Fire(ON_DISCONECTED_FROM_INTERNET);
                         break;
                     case ConectivityState.Error:
-                        NavigationStateMachine.FireIfYouCan(ON_NETWORK_ERROR);
+                        NavigationStateMachine.Fire(ON_NETWORK_ERROR);
                         break;
                     default:
-                        NavigationStateMachine.FireIfYouCan(ON_CONNECTED_TO_INTERNET);
+                        NavigationStateMachine.Fire(ON_CONNECTED_TO_INTERNET);
                         break;
                 }
             });
